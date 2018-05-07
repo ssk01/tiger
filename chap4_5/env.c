@@ -19,7 +19,15 @@ S_table E_base_tenv(void) {
 	S_enter(t, S_Symbol(String("string")), Ty_String());
 	return t;
 }
-S_table E_base_Venv(void) {
+S_table E_base_venv(void) {
 	S_table t = S_empty();
+	Ty_tyList formalTys = NULL;
+	formalTys = Ty_TyList(Ty_String(), NULL);
+	S_enter(t, S_Symbol(String("print")), E_FunEntry(formalTys, Ty_Void()));
+	S_enter(t, S_Symbol(String("getchar")), E_FunEntry(NULL, Ty_String()));
+	S_enter(t, S_Symbol(String("ord")), E_FunEntry(formalTys, Ty_Int()));
+	formalTys = Ty_TyList(Ty_Int(), NULL);
+
+	S_enter(t, S_Symbol(String("chr")), E_FunEntry(formalTys, Ty_String()));
 	return t;
 }

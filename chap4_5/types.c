@@ -80,11 +80,11 @@ static char str_ty[][12] = {
 /* This will infinite loop on mutually recursive types */
 void Ty_print(Ty_ty t)
 {
-	if (t == NULL) printf("null");
+	if (t == NULL) printf("null\n");
 	else {
-		printf("%s", str_ty[t->kind]);
+		printf("%s\n", str_ty[t->kind]);
 		if (t->kind == Ty_name) {
-			printf(", %s", S_name(t->u.name.sym));
+			printf(", %s\n", S_name(t->u.name.sym));
 		}
 	}
 }

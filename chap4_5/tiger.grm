@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "util.h"
 #include "symbol.h"
-#include "absyn.h"
+//#include "absyn.h"
 #include "errormsg.h"
 int yylex(void); /* function prototype */
  A_exp absyn_root = NULL;
@@ -27,6 +27,9 @@ void log(char *s)
 	S_symbol symbol;
 	A_var var;
 	A_exp exp;
+	A_exp value;
+	A_exp opnum;
+	A_exp testnum;
 	A_expList expList;
 	A_oper op;
     A_decList decList;
@@ -49,6 +52,11 @@ void log(char *s)
 %type <symbol> symbol
 %type <var> var
 %type <exp> exp
+%type <exp> value
+%type <exp> opnum
+%type <exp> testnum
+
+
 %type <exp> varExp
 %type <exp> breakExp
 %type <exp> forExp
@@ -97,8 +105,8 @@ void log(char *s)
 %nonassoc OF
 %nonassoc IF THEN WHILE DO FOR TO
 %nonassoc ASSIGN
-%left OR AND
-%nonassoc EQ NEQ GT LT GE LE
+%left AND OR
+%nonassoc EQ NEQ LT LE GT GE
 %left PLUS MINUS 
 %left TIMES DIVIDE
 %%
@@ -106,14 +114,9 @@ void log(char *s)
 program:	exp{
 	absyn_root = $1;
 };
-
-exp
+value
 :	varExp {
 	$$ = $1;
-}
-|   exp op exp {
-	printf("op  ");
-	$$ = A_OpExp(0, $2, $1, $3);
 }
 |	NIL {
 	$$ = A_NilExp(0);
@@ -126,6 +129,40 @@ exp
 |	STRING {
 	$$ = A_StringExp(0, $1);
 }
+|	callExp	{
+	$$ = $1;
+}
+
+
+opnum
+:	value {
+	$$ = $1;
+}
+| value op opnum{
+	$$ = A_OpExp(0, $2, $1, $3);
+}
+|	MINUS value %prec UMINUS{
+	$$ = A_OpExp(0, MINUS, A_IntExp(0, 0), $2);
+	log("UMINUS");
+}
+testnum:
+opnum {
+	$$ = $1;
+}
+|	opnum OR testnum {
+	$$ = A_IfExp(0, $1, A_IntExp(0,1), $3);
+}
+|	testnum AND testnum {
+	$$ = A_IfExp(0, $1, $3, A_IntExp(0,0));
+	//bug;
+}
+
+
+exp:
+testnum {
+	$$ = $1;
+}
+
 |	letExp {
 	$$ = $1;
 }
@@ -135,10 +172,7 @@ exp
 |	assignExp {
 	$$ = $1;
 }	
-|	callExp	{
-	$$ = $1;
 
-}
 |	ifExp {
 	$$ = $1;
 
@@ -163,21 +197,11 @@ exp
 	$$ = $1;
 
 }
-|	MINUS exp %prec UMINUS{
 
-	$$ = A_OpExp(0, MINUS, A_IntExp(0, 0), $2);
-	log("UMINUS");
-}
 |	arrayExp{
 	$$ = $1;
 }
-|	exp OR exp {
-	$$ = A_IfExp(0, $1, A_IntExp(0,1), $3);
-}
-|	exp AND exp {
-	$$ = A_IfExp(0, $1, $3, A_IntExp(0,1));
-	
-}
+
 // -----------------------------------------------
 seqExp
 :	LPAREN letExpList RPAREN {

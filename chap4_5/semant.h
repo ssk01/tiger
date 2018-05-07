@@ -13,3 +13,4 @@ void  transDec(S_table vent, S_table tenv, A_dec d);
 expty  transExp(S_table vent, S_table tenv, A_exp a);
 Ty_ty transTy(S_table tenv, A_ty d);
 
+void Ty_tyKind(Ty_ty e);

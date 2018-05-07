@@ -7,7 +7,7 @@
  */
 
 /* Type Definitions */
-
+#include "symbol.h"
 typedef int A_pos;
 
 typedef struct A_var_ *A_var;

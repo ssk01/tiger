@@ -8,18 +8,57 @@ expty expTy(Tr_exp exp, Ty_ty ty) {
 	e.ty = ty;
 	return e;
 }
-Ty_ty actual_ty(Ty_ty ty) {
-	return ty;
+bool Ty_tyEqual(Ty_ty lhs, Ty_ty rhs) {
+	if (lhs == rhs || lhs == Ty_Nil() || rhs == Ty_Nil()) {
+		return 1;
+	}
+	return 0;
+}
+Ty_ty actual_ty(S_table tenv, Ty_ty ty) {
+	Ty_ty t;
+	if (ty->kind == Ty_name) {
+		t = ty;
+
+	/*	if (t->u.name.ty != NULL &&ty->u.name.sym == t->u.name.ty->u.name.sym) {
+			fck("type recruse");
+			return Ty_Nil();
+		}*/
+		t = ty;
+		//Ty_print(ty);
+
+		t = S_look(tenv, t->u.name.sym);
+		//Ty_print(t);
+
+		while (  t->kind == Ty_name &&  t->u.name.ty != NULL) {
+			t = S_look(tenv, t->u.name.ty->u.name.sym);
+			Ty_print(t);
+			if (t->u.name.sym == ty->u.name.sym) {
+				fck("type recruse");
+				return Ty_Nil();
+			}
+		}
+		return t;
+	}
+	else {
+		return ty;
+	}
 }
 Ty_tyList makeFormalTyList(S_table tenv, A_fieldList f) {
-	Ty_fieldList list = NULL;
-	while (f) {
+	if (f) {
 		Ty_ty ty = S_look(tenv, f->head->typ);
-		Ty_field field = Ty_Field(f->head->name, ty);
-		list = Ty_FieldList(field, list);
-		f = f->tail;
+		//Ty_field field = Ty_Field(f->head->name, ty);
+		return Ty_TyList(ty, makeFormalTyList(tenv, f->tail));
 	}
-	return list;
+	return NULL;
+}
+Ty_fieldList makefieldList(S_table tenv, A_fieldList f) {
+	if (f) {
+		Ty_ty ty = S_look(tenv, f->head->typ);
+		//Ty_field field = Ty_Field(f->head->name, ty);
+		Ty_field field = Ty_Field(f->head->name, ty);
+		return  Ty_FieldList(field, makefieldList(tenv, f->tail));
+	}
+	return NULL;
 }
 // venv symbol to E_enventry;
 // tenv symbol to ty_ty;
@@ -30,7 +69,7 @@ expty transVar(S_table venv, S_table tenv, A_var v) {
 	case A_simpleVar: {
 		E_enventry x = S_look(venv, v->u.simple);
 		if (x && x->kind == E_varEntry) {
-			return expTy(NULL, actual_ty(x->u.var.ty));
+			return expTy(NULL, actual_ty(tenv,x->u.var.ty));
 		}
 		EM_error(v->pos, "underfined variable %s", S_name(v->u.simple));
 		break;
@@ -40,8 +79,8 @@ expty transVar(S_table venv, S_table tenv, A_var v) {
 		expty ty = transVar(venv, tenv, v->u.subscript.var);
 		if (ty.ty->kind == Ty_array) {
 			expty key = transExp(venv, tenv, v->u.subscript.exp);
-			if (actual_ty(key.ty) == Ty_Int()) {
-				return  expTy(NULL, actual_ty(ty.ty->u.array));
+			if (actual_ty(tenv,key.ty) == Ty_Int()) {
+				return  expTy(NULL, actual_ty(tenv,ty.ty->u.array));
 			}
 		}
 		EM_error(v->pos, "underfined variable %s");
@@ -55,7 +94,7 @@ expty transVar(S_table venv, S_table tenv, A_var v) {
 				f = f->tail;
 			}
 			if (f != NULL) {
-				return expTy(NULL, actual_ty(f->head->ty));
+				return expTy(NULL, actual_ty(tenv,f->head->ty));
 			}
 		}
 		EM_error(v->pos, "underfined variable %s", S_name(v->u.field.sym));
@@ -75,7 +114,11 @@ void  transDec(S_table venv, S_table tenv, A_dec d) {
 		expty e = transExp(venv, tenv, d->u.var.init);
 		if (d->u.var.typ != NULL) {
 			Ty_ty ty = S_look(tenv, d->u.var.typ);
-			if (ty != e.ty) {
+			if (actual_ty(tenv, ty) != actual_ty(tenv, e.ty)) {
+				Ty_print(actual_ty(tenv, ty));
+				Ty_print(e.ty);
+				Ty_print(actual_ty(tenv, e.ty));
+
 				//? equal how
 				EM_error(0, "var dec type not equal %s", "");
 			}
@@ -95,10 +138,21 @@ void  transDec(S_table venv, S_table tenv, A_dec d) {
 			A_fundec f = list->head;
 			Ty_ty resultTy = Ty_Void();
 			if (f->result != NULL) {
-				Ty_ty resultTy = S_look(tenv, f->result);
+				resultTy = S_look(tenv, f->result);
+				//printf("resty\n");
 			}
 			Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
 			S_enter(venv, f->name, E_FunEntry(formalTys, resultTy));
+		}
+		for (list = d->u.function; list; list = list->tail) {
+			A_fundec f = list->head;
+			Ty_ty resultTy = Ty_Void();
+			if (f->result != NULL) {
+				resultTy = S_look(tenv, f->result);
+				//printf("resty\n");
+			}
+			Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
+
 			S_beginScope(venv);
 			{
 				A_fieldList l;
@@ -106,10 +160,11 @@ void  transDec(S_table venv, S_table tenv, A_dec d) {
 				for (l = f->params, t = formalTys; l; l = l->tail, t = t->tail) {
 					S_enter(venv, l->head->name, E_VarEntry(t->head));
 				}
-				expty e = transExp(venv, tenv, d->u.function->head->body);
-				if (e.ty != resultTy) {
+				expty e = transExp(venv, tenv, list->head->body);
+				if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
 					EM_error(0, "function result type not match %s", "");
 				}
+				printf("ok fundec: %s \n", f->name->name);
 			}
 			S_endScope(venv);
 		}
@@ -118,8 +173,30 @@ void  transDec(S_table venv, S_table tenv, A_dec d) {
 	case A_typeDec: {
 		A_nametyList n;
 		for (n = d->u.type; n; n = n->tail) {
-			S_enter(tenv, n->head->name, transTy(tenv, n->head->ty));
+			S_enter(tenv, n->head->name, Ty_Name(n->head->name, NULL));
 		}
+		for (n = d->u.type; n; n = n->tail) {
+			//Ty_ty ty = S_look(tenv, n->head->name);
+			//ty
+			//if (ty->kind == Ty_record) {
+
+			//}
+			/*Ty_ty ty = transTy(tenv, n->head->ty);
+			if (ty->u.name.sym == n->head->name) {
+				fck("fuck rec");
+			}
+			S_enter(tenv, n->head->name, transTy(tenv, n->head->ty));*/
+			Ty_ty ty = S_look(tenv, n->head->name);
+			Ty_ty rhs = transTy(tenv, n->head->ty);
+			if (rhs->kind == Ty_name) {
+				ty->u.name.ty = rhs;
+			}
+			else {
+				S_enter(tenv, n->head->name, rhs); 
+			}
+			actual_ty(tenv, S_look(tenv, n->head->name));
+		}
+
 		break;
 	}
 	default:
@@ -147,9 +224,11 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		A_expList arg;
 		Ty_tyList ty;
 
-		for (arg = a->u.call.args, ty = e->u.fun.formals; arg && ty; arg = arg->tail, ty->tail) {
+		for (arg = a->u.call.args, ty = e->u.fun.formals; arg && ty; arg = arg->tail, ty = ty->tail) {
 			expty arg1 = transExp(venv, tenv, arg->head);
 			if (arg1.ty != ty->head) {
+				Ty_tyKind(arg1.ty);
+				Ty_tyKind(ty->head);
 				fck("call arguments not matched");
 			}
 		}
@@ -169,7 +248,11 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 					fck("record name=value; name  not matched");
 				}
 				expty e = transExp(venv, tenv, elist->head->exp);
-				if (e.ty == tylist->head->ty) {
+				if (e.ty != actual_ty(tenv, tylist->head->ty) && e.ty != Ty_Nil()) {
+					Ty_print(e.ty);
+					Ty_print(S_look(tenv, S_Symbol(String("list")) ));
+					printf("%s, www\n", tylist->head->name->name);
+					Ty_print(tylist->head->ty);
 					fck("record name=value; value type  not matched");
 				}
 			}
@@ -182,6 +265,9 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 	}
 	case A_seqExp: {
 		A_expList exp = a->u.seq;
+		if (exp == NULL) {
+			return expTy(NULL, Ty_Void());
+		}
 		Ty_ty ty;
 		for (; exp; exp = exp->tail) {
 			ty = transExp(venv, tenv, exp->head).ty;
@@ -223,6 +309,12 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 				elsee = transExp(venv, tenv, a->u.iff.elsee);
 			}
 			if (then.ty == elsee.ty) {
+				return expTy(NULL, elsee.ty);
+			}
+			else if (then.ty == Ty_Nil()) {
+				return expTy(NULL, elsee.ty);
+			}
+			else if (elsee.ty == Ty_Nil()) {
 				return expTy(NULL, then.ty);
 			}
 			else {
@@ -231,6 +323,7 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		}
 		else {
 			fck("if test type != int");
+			Ty_print(test.ty);
 		}
 		break;
 	}
@@ -265,8 +358,8 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		expty size = transExp(venv, tenv, a->u.array.size);
 		expty init = transExp(venv, tenv, a->u.array.init);
 		if (size.ty == Ty_Int()) {
-			if (init.ty == ty) {
-				return expTy(NULL, Ty_Array(ty));
+			if (init.ty == ty->u.array) {
+				return expTy(NULL, ty);
 			}
 			else {
 				fck("array init type not match");
@@ -286,13 +379,30 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		A_oper oper = a->u.op.oper;
 		expty left = transExp(venv, tenv, a->u.op.left);
 		expty right = transExp(venv, tenv, a->u.op.right);
-		if (oper == A_plusOp) {
+		if (!Ty_tyEqual(left.ty, right.ty)) {
+			fck("op ty should equal");
+			Ty_print(left.ty);
+			Ty_print(right.ty);
+			fck("op ty should equal");
+
+		}
+		//if (left.ty != Ty_Int() && left.ty != Ty_String()) {
+		//	fck("no op for this type");
+		//	Ty_print(left.ty);
+		//}
+		if (oper == A_plusOp || oper == A_minusOp || oper == A_timesOp || oper ==  A_divideOp ) {
 			if (left.ty != Ty_Int()) {
 				EM_error(a->u.op.left->pos, "interger required");
 			}
 			if (right.ty != Ty_Int()) {
 				EM_error(a->u.op.right->pos, "interger required");
 			}
+			return expTy(NULL, Ty_Int());
+		}
+		else if (oper == A_eqOp || oper == A_neqOp) {
+			return expTy(NULL, Ty_Int());
+		}
+		else {
 			return expTy(NULL, Ty_Int());
 		}
 		break;
@@ -312,7 +422,7 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		break;
 	}
 	default:
-		
+		fck("no transexp kind");
 		break;
 	}
 }
@@ -321,12 +431,27 @@ Ty_ty transTy(S_table tenv, A_ty d) {
 	{
 	case A_nameTy: {
 		Ty_ty ty = S_look(tenv, d->u.name);
-		//if (ty->kind != Ty_record && ty->)
+		if (ty->kind == Ty_name) {
+			return ty;
+		}
+		//while (ty->kind != Ty_name) {
+		//	if (ty->u.name.sym == d->u.name) {
+		//		fck("type recursive");
+		//	}
+		//	ty = S_look(tenv, ty->u.name.sym);
+		//}
 		return ty;
+		//if (ty->kind != Ty_record && ty->)
 		break;
 	}
 	case A_recordTy: { 
-		return Ty_Record(d->u.record);
+		A_fieldList l;
+		Ty_fieldList fieldList = NULL;
+
+		l = d->u.record;
+			//Ty_field f = Ty_Field(l->head->name, ty);
+			//fieldList = Ty_FieldList(f, fieldList);
+		return Ty_Record(makefieldList(tenv, l));
 		break;
 	}
 	case A_arrayTy: {
@@ -335,6 +460,44 @@ Ty_ty transTy(S_table tenv, A_ty d) {
 		break;
 	}
 	default:
+		break;
+	}
+
+}
+
+void Ty_tyKind(Ty_ty e) {
+	switch (e->kind)
+	{
+	case Ty_record: {
+		printf("record\n");
+		break;
+	}
+	case Ty_nil: {
+		printf("nil\n");
+		break;
+	}
+	case Ty_int: {
+		printf("int\n");
+		break;
+	}
+	case Ty_string: {
+		printf("string\n");
+		break;
+	}
+	case Ty_array: {
+		printf("array\n");
+		break;
+	}
+	case Ty_name: {
+		printf("name\n");
+		break;
+	}
+	case Ty_void: {
+		printf("void\n");
+		break;
+	}
+	default:
+		printf("undefined fuck type\n");
 		break;
 	}
 

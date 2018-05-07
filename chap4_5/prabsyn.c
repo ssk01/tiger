@@ -56,6 +56,7 @@ static char str_oper[][12] = {
    "EQUAL", "NOTEQUAL", "LESSTHAN", "LESSEQ", "GREAT", "GREATEQ"};
  
 static void pr_oper(FILE *out, A_oper d) {
+	//if(d->ki)
   fprintf(out, "%s", str_oper[d]);
 }
 
