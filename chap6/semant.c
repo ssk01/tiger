@@ -2,11 +2,26 @@
 #include "env.h"
 #include "absyn.h"
 #include "errormsg.h"
+#include <stdio.h>
 expty expTy(Tr_exp exp, Ty_ty ty) {
 	expty e;
 	e.exp = exp;
 	e.ty = ty;
 	return e;
+}
+static int breakCount = 0;
+static void addbreakCount() {
+	breakCount++;
+}
+static void testBreak() {
+	if (breakCount <= 0) {
+		fck("break not in for or while");
+
+	}
+
+}
+static void deletebreakCount() {
+		breakCount--;
 }
 bool Ty_tyEqual(Ty_ty lhs, Ty_ty rhs) {
 	if (lhs == rhs || lhs == Ty_Nil() || rhs == Ty_Nil()) {
@@ -290,7 +305,9 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		if (test.ty != Ty_Int()) {
 			fck(" while test type not int");
 		}
+		addbreakCount();
 		expty body = transExp(venv, tenv, a->u.whilee.body);
+		deletebreakCount();
 		if (body.ty != Ty_Void()) {
 			fck("while body type should be void");
 		}
@@ -335,7 +352,9 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 			S_beginScope(venv);
 			S_beginScope(tenv);
 			S_enter(venv, a->u.forr.var, E_VarEntry(lo.ty));
+			addbreakCount();
 			exp = transExp(venv, tenv, a->u.forr.body);
+			deletebreakCount();
 			S_endScope(tenv);
 			S_endScope(venv);
 			if (exp.ty == Ty_Void()) {
@@ -351,6 +370,7 @@ expty  transExp(S_table venv, S_table tenv, A_exp a) {
 		break;
 	}
 	case A_breakExp: {
+		testBreak();
 		break;
 	}
 	case A_arrayExp: {
