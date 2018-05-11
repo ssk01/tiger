@@ -2,6 +2,7 @@
 #include "temp.h"
 #include "absyn.h"
 #include "tree.h"
+#include "frame.h"
 typedef struct Tr_exp_ *Tr_exp;
 typedef struct patchList_ *patchList;
 typedef struct Tr_access_ *Tr_access;
@@ -14,12 +15,15 @@ struct Tr_accessList_ {
 struct Cx {
 	patchList trues; patchList falses; T_stm stm;
 };
-
+Tr_access newTr_access(Tr_level level, F_access access);
 Tr_accessList Tr_AccessList(Tr_access head, Tr_accessList tail);
 Tr_level Tr_outermost(void);
-
+Tr_access Tr_allocLocal(Tr_level l, bool escape);
 Tr_level Tr_newLevel(Tr_level p, Temp_label n, U_boolList f) ;
 struct patchList_ { Temp_label *head; patchList tail; };
+
+Tr_accessList Tr_formals(Tr_level l);
+
 typedef struct Tr_exp_ *Tr_exp;
 struct Tr_exp_ {
 	enum {

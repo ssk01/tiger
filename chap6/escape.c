@@ -62,11 +62,11 @@ static void tranverseVar(S_table env, int depth, A_var v) {
 		break;
 	}
 	case A_subscriptVar: {
-		transVar(env, env, v->u.subscript.var);
+		tranverseVar(env, depth, v->u.subscript.var);
 		break;
 	}
 	case A_fieldVar: {
-		transVar(env, depth, v->u.field.var);
+		tranverseVar(env, depth, v->u.field.var);
 		break;
 	}
 	default: {

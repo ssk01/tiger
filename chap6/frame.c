@@ -60,7 +60,7 @@ static F_accessList makeFormalAccessList(F_frame f, U_boolList formals) {
 	int i = 0;
 	for (; formals; formals = formals->tail) {
 
-		if (!formals->tail && i < 6) {
+		if (!formals->head && i < 6) {
 			ac = InReg(Temp_newtemp());
 		}
 		else {

@@ -20,6 +20,16 @@ Tr_access newTr_access(Tr_level level, F_access access) {
 	a->level = level;
 	return a;
 }
+Tr_accessList Tr_formals(Tr_level l) {
+	return l->formals;
+	//F_accessList f = F_formals(l->frame);
+	//Tr_accessList res = NULL;
+	//for (; f; f = f->tail) {
+	//	res = Tr_AccessList(newTr_access(l, f->head), res);
+	//}
+	//return res;
+}
+
 Tr_access Tr_allocLocal(Tr_level l, bool escape) {
 	return newTr_access(l, F_allocLocal(l->frame, escape));
 }

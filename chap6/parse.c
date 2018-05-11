@@ -24,15 +24,14 @@ A_exp parse(string fname)
 	{
 		FILE * out = stdout;
 		pr_exp(out, absyn_root, 4);
-		S_table tenv = E_base_tenv();
-		S_table venv = E_base_venv();
 		printf("_________________________________________ ;\n");
-		Ty_tyKind(transExp(venv, tenv, absyn_root).ty);
+		SEM_transProg(absyn_root);
+
 	}
 	else return NULL;
 }
 int main() {
-	parse("while.tig");
+	parse("merge.tig");
 	//parse("merge.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");
