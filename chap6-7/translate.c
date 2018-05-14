@@ -88,6 +88,7 @@ static Tr_exp Tr_Nx(T_stm nx);
 extern int FRAME_WORD_SIZE;
 Tr_exp Tr_simpleVar(Tr_access acc, Tr_level l) {
 	T_exp framePtr = T_Temp(F_FP());
+	//?parent
 	for (; l != acc->level; l = l->parent) {
 		//framePtr = T_Mem(T_Binop(T_plus, framePtr,))
 		F_access staticLink = F_formals(l->frame)->head;
@@ -95,7 +96,19 @@ Tr_exp Tr_simpleVar(Tr_access acc, Tr_level l) {
 	}
 	return Tr_Ex(F_Exp(acc->access, framePtr));
 }
-
+Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Tr_exp done) {
+	Temp_label doneLabel = unEx(done)->u.NAME;
+	Temp_label testLabel = Temp_newlabel();
+	Temp_label bodyLabel = Temp_newlabel();
+	T_stm test_stm = T_Cjump(T_eq, unEx(test), T_Const(0), doneLabel, bodyLabel);
+	return Tr_Nx(
+	T_Seq(T_Label(testLabel),
+	T_Seq(test_stm,
+	T_Seq(T_Label(bodyLabel),
+	T_Seq(unNx(body),
+	T_Seq(T_Jump(T_Name(testLabel), Temp_LabelList(testLabel, NULL)),
+	 T_Label(doneLabel)))))));
+}
 
 Tr_exp Tr_assign(Tr_exp lhs, Tr_exp rhs) {
 	return Tr_Nx(T_Move(unEx(lhs), rhs));
@@ -164,6 +177,31 @@ Tr_exp Tr_fieldVar(Tr_exp exp, int i) {
 	T_exp offset = T_Binop(T_mul, T_Const(i), T_Const(FRAME_WORD_SIZE));
 	T_exp addr = T_Binop(T_plus, unEx(exp), offset);
 	return Tr_Ex(T_Mem(addr));
+}
+Tr_exp Tr_breakInit() {
+	return Tr_Ex(T_Name(Temp_newlabel()));
+}
+
+Tr_exp Tr_breakExp(Tr_exp breakk) {
+	assert(breakk != NULL);
+	return Tr_Nx(T_Jump(unEx(breakk), Temp_LabelList(unEx(breakk)->u.NAME, NULL)));
+}
+Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_expList args) {
+	//ARGS SEQ IS FU DE.
+	T_exp framePtr = T_Temp(F_FP());
+	while (call_level && call_level != def_level->parent) {
+		F_access staticLink = F_formals(call_level->frame)->head;
+		framePtr = F_Exp(staticLink, framePtr);
+	}
+	T_expList targs = T_ExpList(framePtr, NULL);
+	T_expList realargs = NULL;
+	for (; args; args = args->tail) {
+		T_exp arg = unEx(args->head);
+		realargs = T_ExpList(arg, realargs);
+	}
+	targs->tail = realargs;
+	return Tr_Ex(T_Call(T_Name(fun), targs));
+		//framePtr = T_Mem(T_Binop(T_plus, framePtr,))
 }
 
 Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
