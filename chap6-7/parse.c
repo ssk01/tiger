@@ -31,7 +31,7 @@ A_exp parse(string fname)
 	else return NULL;
 }
 int main() {
-	parse("merge.tig");
+	parse("16.tig");
 	//parse("merge.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");

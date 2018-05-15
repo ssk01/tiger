@@ -53,9 +53,36 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Tr_exp done);
 Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_expList args);
 Tr_exp Tr_breakExp(Tr_exp breakk);
 Tr_exp Tr_breakInit();
-Tr_exp Tr_arithExp(A_oper oper, Tr_exp left, Tr_exp right);
+//Tr_exp Tr_arithExp(A_oper oper, Tr_exp left, Tr_exp right);
+Tr_exp Tr_noExp();
+Tr_exp Tr_stringExp(string s);
+Tr_exp Tr_nilExp();
+Tr_exp Tr_intExp(int i);
+Tr_exp Tr_binOp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
+Tr_exp Tr_seqExp(Tr_expList seqList);
+Tr_exp Tr_stringCmpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
+Tr_exp Tr_comOpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
+void Tr_procEntryExit(Tr_level level, Tr_exp body);
 void do_Patch(patchList tList, Temp_label label);
 static T_exp unEx(Tr_exp e);
 static T_stm unNx(Tr_exp e);
 static struct Cx unCx(Tr_exp e);
 void Cxinit(struct Cx c, Temp_label t, Temp_label f);
+
+typedef struct F_fragList_ * F_fragList;
+typedef struct F_frag_ * F_frag;
+struct  F_frag_ {
+	enum { F_stringFlag, F_processFlag } kind;
+	union {
+		struct { Temp_label label;
+		string str;
+		} stringg;
+		struct {
+			T_stm body; F_frame frame;
+		} proc;
+	}u;
+};
+struct F_fragList_ {
+	F_frag head;
+	F_fragList tail;
+};

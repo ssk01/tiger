@@ -14,6 +14,7 @@ struct Tr_access_ {
 	Tr_level level;
 	F_access access;
 };
+static patchList PatchList(Temp_label *head, patchList tail);
 Tr_expList Tr_ExpList(Tr_exp head, Tr_expList tail) {
 	Tr_expList e = checked_malloc(sizeof(struct Tr_expList_));
 	e->head = head;
@@ -111,7 +112,7 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Tr_exp done) {
 }
 
 Tr_exp Tr_assign(Tr_exp lhs, Tr_exp rhs) {
-	return Tr_Nx(T_Move(unEx(lhs), rhs));
+	return Tr_Nx(T_Move(unEx(lhs), unEx(rhs)));
 }
 Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee) {
 	Tr_exp result = NULL;
@@ -186,6 +187,54 @@ Tr_exp Tr_breakExp(Tr_exp breakk) {
 	assert(breakk != NULL);
 	return Tr_Nx(T_Jump(unEx(breakk), Temp_LabelList(unEx(breakk)->u.NAME, NULL)));
 }
+F_frag F_ProcFrag(T_stm body, F_frame frame) {
+	F_frag f = checked_malloc(sizeof(*f));
+	f->kind = F_processFlag;
+	f->u.proc.body = body;
+	f->u.proc.frame = frame;
+	return f;
+}
+F_frag F_StringFrag(Temp_label lable, string str) {
+	F_frag f = checked_malloc(sizeof(*f));
+	f->kind = F_stringFlag;
+	f->u.stringg.label = lable;
+	f->u.stringg.str = str;
+	return f;
+}
+F_fragList	F_FragList(F_frag head, F_fragList tail) {
+	F_fragList f = checked_malloc(sizeof(struct F_fragList_));
+	f->head = head;
+	f->tail = tail;
+	return f;
+}
+static F_fragList fragList = NULL;
+void Tr_procEntryExit(Tr_level level, Tr_exp body) {
+	F_frag proc_flag = F_ProcFrag(unNx(body), level->frame);
+	fragList = F_FragList(proc_flag, fragList);
+}
+
+static F_fragList stringFragList = NULL;
+Tr_exp Tr_stringExp(string s) {
+	Temp_label label = Temp_newlabel();
+	F_frag string_frag = F_StringFrag(label, s);
+	stringFragList = F_FragList(string_frag, stringFragList);
+	return Tr_Ex(T_Name(label));
+}
+static Temp_temp nil_temp = NULL;
+Tr_exp Tr_noExp() {
+	return Tr_Ex(T_Const(0));
+}
+Tr_exp Tr_nilExp() {
+	if (!nil_temp) {
+		nil_temp = Temp_newtemp();
+		T_stm t_malloc = T_Move(T_Temp(nil_temp), ExternCall(String("malloc"), T_ExpList(T_Const(0), NULL)));
+		return Tr_Ex(T_Eseq(t_malloc, T_Temp(nil_temp)));
+	}
+	return Tr_Ex(T_Temp(nil_temp));
+}
+Tr_exp Tr_intExp(int i) {
+	return Tr_Ex(T_Const(i));
+}
 Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_expList args) {
 	//ARGS SEQ IS FU DE.
 	T_exp framePtr = T_Temp(F_FP());
@@ -206,7 +255,7 @@ Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_ex
 
 Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
 	int i = 0;
-	Temp_temp t;
+	Temp_temp t = Temp_newtemp();
 	T_expList args = T_ExpList(T_Const(attrNum*FRAME_WORD_SIZE), NULL);
 	T_stm t_malloc = T_Move(T_Temp(t), ExternCall(String("malloc"), args));
 	T_stm moves = T_Move(T_Mem(T_Binop(T_plus, T_Temp(t), T_Const(i*FRAME_WORD_SIZE))), unEx(recExpList->head));
@@ -214,25 +263,71 @@ Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
 		T_stm mov = T_Move(T_Mem(T_Binop(T_plus, T_Temp(t), T_Const(i*FRAME_WORD_SIZE))), unEx(recExpList->head));
 		moves = T_Seq(mov, moves);
 	}
-	return T_Eseq(T_Seq(t_malloc, moves), T_Temp(t));
+	return Tr_Ex(T_Eseq(T_Seq(t_malloc, moves), T_Temp(t)));
 }
-Tr_exp Tr_arithExp(A_oper oper, Tr_exp left, Tr_exp right) {
-	T_relOp relop;
-	switch (oper)
-	{
-	case A_eqOp:relop = T_eq; break;
-	case A_neqOp:relop = T_ne; break;
-	case A_ltOp:relop = T_lt; break;
-	case A_leOp:relop = T_le; break;
-	case A_geOp:relop = T_ge; break;
-	case A_gtOp:relop = T_gt; break;
+Tr_exp Tr_seqExp(Tr_expList seqList) {
+	T_exp seq = unEx(seqList->head);
+	seqList = seqList->tail;
+	while (seqList) {
+		//?
+		seq = T_Eseq(unNx(seqList->head), seq);
+	}
+	return Tr_Ex(seq);
+}
+
+
+Tr_exp Tr_stringCmpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp) //default signed int
+{
+	T_expList args = T_ExpList(unEx(left_exp),
+		T_ExpList(unEx(right_exp), NULL)
+	);
+	T_exp list = ExternCall(String("stringEqual"), args);
+	switch (op) {
+	case A_eqOp: {
+		return Tr_Ex(list);
+	}
+	case A_neqOp: {
+		return (list->kind == T_CONST && list->u.CONST == 1) ? Tr_Ex(T_Const(0)) : Tr_Ex(T_Const(1));
+	}
 	default:
 		assert(0);
 	}
-	return Tr_Ex(T_Binop(oper, unEx(left), unEx(right)));
 
 }
 
+Tr_exp Tr_comOpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp) //default signed int
+{
+	T_relOp t_relop;
+	switch (op)
+	{
+	case A_eqOp: t_relop = T_eq; break;
+	case A_neqOp: t_relop = T_ne; break;
+	case A_ltOp: t_relop = T_lt; break;
+	case A_leOp: t_relop = T_le; break;
+	case A_gtOp: t_relop = T_gt; break;
+	case A_geOp: t_relop = T_ge; break;
+	default: assert(0); /* should never happen*/
+	}
+	T_stm stm = T_Cjump(t_relop, unEx(left_exp), unEx(right_exp), NULL, NULL);
+	patchList trues = PatchList(&(stm->u.CJUMP.true), NULL);
+	patchList falses = PatchList(&(stm->u.CJUMP.false), NULL);
+	return Tr_Cx(trues, falses, stm);
+}
+
+
+Tr_exp Tr_binOp(A_oper op, Tr_exp left_exp, Tr_exp right_exp)
+{
+	T_binOp t_binop;
+	switch (op)
+	{
+	case A_plusOp: t_binop = T_plus; break;
+	case A_minusOp: t_binop = T_minus; break;
+	case A_timesOp: t_binop = T_mul; break;
+	case A_divideOp: t_binop = T_div; break;
+	}
+	T_exp binop = T_Binop(t_binop, unEx(left_exp), unEx(right_exp));
+	return Tr_Ex(binop);
+}
 
 
 

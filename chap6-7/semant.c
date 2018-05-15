@@ -41,7 +41,7 @@ static void deletebreakCount() {
 		breakCount--;
 }
 bool Ty_tyEqual(Ty_ty lhs, Ty_ty rhs) {
-	if (lhs == rhs || lhs == Ty_Nil() || rhs == Ty_Nil()) {
+	if (  lhs == rhs || lhs == Ty_Nil() || rhs == Ty_Nil()) {
 		return 1;
 	}
 	return 0;
@@ -164,7 +164,7 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 		}
 		ac = Tr_allocLocal(level, d->u.var.escape);
 		S_enter(venv, d->u.var.var, E_VarEntry(ac, e.ty));
-		Tr_assign(Tr_simpleVar(ac, level), e.exp);
+		return Tr_assign(Tr_simpleVar(ac, level), e.exp);
 		break;
 	}
 	case A_functionDec: {
@@ -203,10 +203,12 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 				if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
 					EM_error(0, "function result type not match %s", "");
 				}
+				Tr_procEntryExit(funEntry->u.fun.level, e.exp);
 				printf("ok fundec: %s \n", f->name->name);
 			}
 			S_endScope(venv);
 		}
+		return Tr_noExp();
 		break;
 	}
 	case A_typeDec: {
@@ -235,6 +237,7 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 			}
 			actual_ty(tenv, S_look(tenv, n->head->name));
 		}
+		return Tr_noExp();
 
 		break;
 	}
@@ -251,18 +254,18 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		break;
 	}
 	case A_nilExp: {
-		return expTy(NULL, Ty_Nil());
+		return expTy(Tr_nilExp(), Ty_Nil());
 		break;
 	}
 	case A_stringExp: {
-		return expTy(NULL, Ty_String());
+		return expTy(Tr_stringExp(a->u.stringg), Ty_String());
 		break;
 	}
 	case A_callExp: {
 		E_enventry e = S_look(venv, a->u.call.func);
 		A_expList arg;
 		Ty_tyList ty;
-		Tr_expList args;
+		Tr_expList args = NULL;
 
 		for (arg = a->u.call.args, ty = e->u.fun.formals; arg && ty; arg = arg->tail, ty = ty->tail) {
 			expty arg1 = transExp(breakk, level, venv, tenv, arg->head);
@@ -277,7 +280,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		if (arg || ty) {
 			fck("arguments nums not equal");
 		}
-		return expTy(res, e->u.fun.result);
+		return expTy(res,  actual_ty(tenv, e->u.fun.result));
 		break;
 	}
 	case A_recordExp: {
@@ -286,7 +289,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 			Ty_fieldList tylist = ty->u.record;
 			A_efieldList elist = a->u.record.fields;
 			Tr_expList recExpList = NULL;
-			int attrNum;
+			int attrNum = 0;
 			for (; tylist && elist; tylist = tylist->tail, elist = elist->tail) {
 				if (tylist->head->name != elist->head->name  ) {
 					fck("record name=value; name  not matched");
@@ -315,11 +318,15 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		if (exp == NULL) {
 			return expTy(NULL, Ty_Void());
 		}
-		Ty_ty ty;
+		//Ty_ty ty;
+		expty e;
+		Tr_expList list = NULL;
 		for (; exp; exp = exp->tail) {
-			ty = transExp(breakk, level, venv, tenv, exp->head).ty;
+			e = transExp(breakk, level, venv, tenv, exp->head);
+			list = Tr_ExpList(e.exp, list);
 		}
-		return expTy(NULL, ty);
+
+		return expTy(Tr_seqExp(list), e.ty);
 		break;
 	}
 	case A_assignExp: {
@@ -347,7 +354,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 			fck("while body type should be void");
 		}
 		Tr_exp res = Tr_whileExp(test.exp, body.exp, done);
-		return expTy(NULL, Ty_Void());
+		return expTy(res, Ty_Void());
 		break;
 	}
 	case A_ifExp: {
@@ -382,7 +389,23 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		break;
 	}
 	case A_forExp: {
-		expty exp;
+		A_dec i_dec = A_VarDec(a->pos, a->u.forr.var, NULL, a->u.forr.lo);
+		A_dec limit_dec = A_VarDec(a->pos, S_Symbol(String("limit")), NULL, a->u.forr.hi);
+		A_dec test_dec = A_VarDec(a->pos, S_Symbol(String("test")), NULL, A_IntExp(a->pos, 1));
+		A_decList for_dec = A_DecList(i_dec,
+			A_DecList(limit_dec,
+				A_DecList(test_dec, NULL)));
+		A_exp i_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var));
+		A_exp limit_Exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("limit"))));
+		A_exp thenexp = A_AssignExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var), A_OpExp(a->pos, A_plusOp, i_exp, A_IntExp(a->pos, 1)));
+		A_exp elseexp = A_AssignExp(a->pos, S_Symbol(String("test")), A_IntExp(a->pos, 0));
+		A_exp limit_test_exp = A_IfExp(a->pos, A_OpExp(a->pos, A_ltOp, i_exp, limit_Exp), thenexp, elseexp);
+		A_exp forSeqExp = A_SeqExp(a->pos, A_ExpList(a->u.forr.body, A_ExpList(limit_test_exp, NULL)));
+		A_exp test_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("test"))));
+		A_exp whileExp = A_WhileExp(a->pos, test_exp, forSeqExp);
+		A_exp if_Exp = A_IfExp(a->pos, A_OpExp(a->pos, A_leOp, a->u.forr.lo, a->u.forr.hi), whileExp, NULL);
+		return transExp(breakk, level, venv, tenv, if_Exp);
+		/*expty exp;
 		expty lo = transExp(breakk, level, venv, tenv, a->u.forr.hi);
 		expty hi = transExp(breakk, level, venv, tenv, a->u.forr.lo);
 		if (lo.ty == Ty_Int() && hi.ty == Ty_Int()) {
@@ -405,7 +428,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		}
 		else {
 			fck("for high low type error");
-		}
+		}*/
 		break;
 	}
 	case A_breakExp: {
@@ -432,32 +455,60 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 	}
 	case A_intExp: {
 		//a->u.intt
-		return expTy(NULL, Ty_Int());
+		return expTy(Tr_intExp(a->u.intt), Ty_Int());
 		break;
 	}
 	case A_opExp: {
 		A_oper oper = a->u.op.oper;
 		expty left = transExp(breakk, level, venv, tenv, a->u.op.left);
 		expty right = transExp(breakk, level, venv, tenv, a->u.op.right);
-		if (!Ty_tyEqual(left.ty, right.ty)) {
+		if (!Ty_tyEqual(actual_ty(tenv, left.ty), actual_ty(tenv, right.ty))) {
 			fck("op ty should equal");
 			Ty_print(left.ty);
 			Ty_print(right.ty);
 			fck("op ty should equal");
-
+			//return expTy(Tr_noExp(), Ty_Void());
 		}
-		if (oper == A_plusOp || oper == A_minusOp || oper == A_timesOp || oper ==  A_divideOp ) {
+		//if (oper == A_plusOp || oper == A_minusOp || oper == A_timesOp || oper ==  A_divideOp ) {
+		//}
+		switch (oper)
+		{
+		case A_plusOp:
+		case A_minusOp:
+		case A_timesOp:
+		case A_divideOp: {
 			if (left.ty != Ty_Int()) {
 				EM_error(a->u.op.left->pos, "interger required");
 			}
 			if (right.ty != Ty_Int()) {
 				EM_error(a->u.op.right->pos, "interger required");
 			}
+			return expTy(Tr_binOp(oper, left.exp, right.exp), Ty_Int());
+
+		}
+		case A_eqOp:
+		case A_neqOp: {
+			if (left.ty == Ty_String()) {
+				return expTy(Tr_stringCmpExp(oper, left.exp, right.exp), Ty_Int());
+			}
+			else {
+				return expTy(Tr_comOpExp(oper, left.exp, right.exp), Ty_Int());
+			}
+
+		}
+		case A_ltOp:
+		case A_leOp:
+		case A_gtOp:
+		case A_geOp: {
+			return expTy(Tr_comOpExp(oper, left.exp, right.exp), Ty_Int());
+		}
+		default:
+			break;
+		}
+	
+		/*else  {
 			return expTy(NULL, Ty_Int());
-		}
-		else  {
-			return expTy(Tr_arithExp(oper, left.exp, right.exp), Ty_Int());
-		}
+		}*/
 		/*else {
 			return expTy(NULL, Ty_Int());
 		}*/
