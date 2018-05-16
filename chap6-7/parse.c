@@ -24,14 +24,14 @@ A_exp parse(string fname)
 	{
 		FILE * out = stdout;
 		pr_exp(out, absyn_root, 4);
-		printf("_________________________________________ ;\n");
+		printf("\n_________________________________________\n");
 		SEM_transProg(absyn_root);
 
 	}
 	else return NULL;
 }
 int main() {
-	parse("16.tig");
+	parse("1.tig");
 	//parse("merge.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");

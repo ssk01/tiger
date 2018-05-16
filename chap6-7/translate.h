@@ -51,6 +51,8 @@ Tr_exp Tr_assign(Tr_exp lhs, Tr_exp rhs);
 Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum);
 Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Tr_exp done);
 Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_expList args);
+Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init);
+Tr_exp Tr_letExp(Tr_expList explist);
 Tr_exp Tr_breakExp(Tr_exp breakk);
 Tr_exp Tr_breakInit();
 //Tr_exp Tr_arithExp(A_oper oper, Tr_exp left, Tr_exp right);

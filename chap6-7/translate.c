@@ -253,6 +253,11 @@ Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_ex
 		//framePtr = T_Mem(T_Binop(T_plus, framePtr,))
 }
 
+Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init) {
+	T_expList args = T_ExpList(size, T_ExpList(init, NULL));
+	return Tr_Ex(ExternCall(String("initArray"), args));
+}
+
 Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
 	int i = 0;
 	Temp_temp t = Temp_newtemp();

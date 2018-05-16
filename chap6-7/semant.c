@@ -3,6 +3,7 @@
 #include "absyn.h"
 #include "errormsg.h"
 #include "translate.h"
+#include "printtree.h"
 #include <stdio.h>
 expty expTy(Tr_exp exp, Ty_ty ty) {
 	expty e;
@@ -21,7 +22,11 @@ void SEM_transProg(A_exp exp) {
 	Tr_exp breakk = NULL;
 
 	et = transExp(breakk, Tr_outermost(), v, t, exp);
-	printf("this exp return: "); 
+	//FILE* out = fopen("tr_exp.txt", "w+");
+	FILE* out = stdout;
+	pr_tr(out, et.exp, 4);
+	printf("\n_________________________________________\n");
+	printf("\nthis exp return: "); 
 	Ty_tyKind(et.ty);
 }
 static void testBreak() {
@@ -442,7 +447,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		expty init = transExp(breakk, level, venv, tenv, a->u.array.init);
 		if (size.ty == Ty_Int()) {
 			if (init.ty == ty->u.array) {
-				return expTy(NULL, ty);
+				return expTy(Tr_arrayExp(size.exp, init.exp), ty);
 			}
 			else {
 				fck("array init type not match");
@@ -519,10 +524,14 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		A_decList d;
 		S_beginScope(venv);
 		S_beginScope(tenv);
+		Tr_expList explist = NULL;
 		for (d = a->u.let.decs; d; d = d->tail) {
-			transDec(breakk, level, venv, tenv, d->head);
+			Tr_exp dec = transDec(breakk, level, venv, tenv, d->head);
+			explist = Tr_ExpList(dec, explist);
 		}
 		exp = transExp(breakk, level, venv, tenv, a->u.let.body);
+		explist = Tr_ExpList(exp.exp, explist);
+		Tr_expList letexp = Tr_letExp(explist);
 		S_endScope(tenv);
 		S_endScope(venv);
 		return exp;

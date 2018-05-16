@@ -10,6 +10,7 @@
 #include "printtree.h"
 
 /* local function prototype */
+
 static void pr_tree_exp(FILE *out, T_exp exp, int d);
 
 static void indent(FILE *out, int d) {
@@ -102,4 +103,16 @@ void printStmList (FILE *out, T_stmList stmList)
   for (; stmList; stmList=stmList->tail) {
     pr_stm(out, stmList->head,0); fprintf(out, "\n");
   }
+}
+
+void pr_tr(FILE *out, Tr_exp e, int d) {
+	if (e->kind == Tr_ex) {
+		pr_tree_exp(out, e->u.ex, d);
+	}
+	if (e->kind == Tr_nx) {
+		pr_stm(out, e->u.nx, d);
+	}
+	if (e->kind == Tr_cx) {
+		pr_stm(out, e->u.cx.stm, d);
+	}
 }
