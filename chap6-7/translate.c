@@ -3,17 +3,23 @@
 #include "tree.h"
 #include "frame.h"
 #include "env.h"
+#include "printtree.h"
 struct Tr_level_ {
 	Tr_level parent;
 	Temp_label name;
 	F_frame frame;
 	Tr_accessList formals;
 };
-
 struct Tr_access_ {
 	Tr_level level;
 	F_access access;
 };
+int trLevelParent(Tr_level l) {
+	if (l->parent == NULL) {
+		return 0;
+	}
+	return 1;
+}
 static patchList PatchList(Temp_label *head, patchList tail);
 Tr_expList Tr_ExpList(Tr_exp head, Tr_expList tail) {
 	Tr_expList e = checked_malloc(sizeof(struct Tr_expList_));
@@ -145,7 +151,8 @@ Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee) {
 	else {
 		Temp_label join = Temp_newlabel();
 		T_stm joinJump = T_Jump(T_Name(join), Temp_LabelList(join, NULL));
-		return Tr_Nx(T_Eseq(condition.stm,
+		//return Tr_Nx(condition.stm);
+		return Tr_Nx(T_Seq(condition.stm,
 			T_Seq(T_Label(t),
 			T_Seq(T_Exp(unEx(then)), 
 			T_Seq(joinJump,
@@ -153,6 +160,7 @@ Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee) {
 			T_Seq(T_Exp(unEx(elsee)),
 			T_Label(join)
 					)))))));
+
 		/*if (then->kind == Tr_cx && elsee->kind == Tr_cx) {
 			Temp_label z = Temp_newlabel();
 			Cxinit(then->u.cx, z, z);
@@ -207,19 +215,22 @@ F_fragList	F_FragList(F_frag head, F_fragList tail) {
 	f->tail = tail;
 	return f;
 }
-static F_fragList fragList = NULL;
+
+
+F_fragList fragList = NULL;
 void Tr_procEntryExit(Tr_level level, Tr_exp body) {
 	F_frag proc_flag = F_ProcFrag(unNx(body), level->frame);
 	fragList = F_FragList(proc_flag, fragList);
 }
 
-static F_fragList stringFragList = NULL;
+F_fragList stringFragList = NULL;
 Tr_exp Tr_stringExp(string s) {
 	Temp_label label = Temp_newlabel();
 	F_frag string_frag = F_StringFrag(label, s);
 	stringFragList = F_FragList(string_frag, stringFragList);
 	return Tr_Ex(T_Name(label));
 }
+
 static Temp_temp nil_temp = NULL;
 Tr_exp Tr_noExp() {
 	return Tr_Ex(T_Const(0));
@@ -235,6 +246,13 @@ Tr_exp Tr_nilExp() {
 Tr_exp Tr_intExp(int i) {
 	return Tr_Ex(T_Const(i));
 }
+
+Tr_exp Tr_letExp(Tr_expList explist) {
+	return Tr_seqExp(explist);
+}
+
+
+
 Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_expList args) {
 	//ARGS SEQ IS FU DE.
 	T_exp framePtr = T_Temp(F_FP());
@@ -254,7 +272,7 @@ Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_ex
 }
 
 Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init) {
-	T_expList args = T_ExpList(size, T_ExpList(init, NULL));
+	T_expList args = T_ExpList(unEx(size), T_ExpList(unEx(init), NULL));
 	return Tr_Ex(ExternCall(String("initArray"), args));
 }
 
@@ -270,12 +288,13 @@ Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
 	}
 	return Tr_Ex(T_Eseq(T_Seq(t_malloc, moves), T_Temp(t)));
 }
+// it's reversed
 Tr_exp Tr_seqExp(Tr_expList seqList) {
 	T_exp seq = unEx(seqList->head);
 	seqList = seqList->tail;
 	while (seqList) {
-		//?
 		seq = T_Eseq(unNx(seqList->head), seq);
+		seqList = seqList->tail;
 	}
 	return Tr_Ex(seq);
 }
@@ -450,3 +469,30 @@ static T_exp unEx(Tr_exp e) {
 	}
 }
 
+extern F_fragList fragList;
+extern F_fragList stringFragList;
+void pr_tr(FILE *out, Tr_exp e, int d) {
+	if (e->kind == Tr_ex) {
+		pr_tree_exp(out, e->u.ex, d);
+	}
+	if (e->kind == Tr_nx) {
+		pr_stm(out, e->u.nx, d);
+	}
+	if (e->kind == Tr_cx) {
+		pr_stm(out, e->u.cx.stm, d);
+	}
+}
+void printFrag() {
+	F_fragList l = fragList;
+	printf("frame frag \n");
+	for (; l; l = l->tail) {
+		printf("  frame: %s\n", S_name(F_name(l->head->u.proc.frame)));
+		//void pr_tr(FILE *out, Tr_exp e, int d);
+		pr_tr(stdout, Tr_Nx( l->head->u.proc.body), 4);
+	}
+	l = stringFragList;
+	printf("\nstring frag \n");
+	for (; l; l = l->tail) {
+		printf("  string: %s\n", l->head->u.stringg.str);
+	}
+}

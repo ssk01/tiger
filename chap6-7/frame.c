@@ -33,7 +33,7 @@ F_accessList F_formals(F_frame f) {
 F_access F_allocLocal(F_frame f, bool escape) {
 	f->local_count++;
 	if (escape) {
-		return InFrame(FRAME_WORD_SIZE*f->local_count);
+		return InFrame(-FRAME_WORD_SIZE*f->local_count);
 	}
 	else {
 		return InReg(Temp_newtemp());

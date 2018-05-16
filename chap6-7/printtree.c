@@ -11,7 +11,7 @@
 
 /* local function prototype */
 
-static void pr_tree_exp(FILE *out, T_exp exp, int d);
+ void pr_tree_exp(FILE *out, T_exp exp, int d);
 
 static void indent(FILE *out, int d) {
  int i;
@@ -25,7 +25,7 @@ static char bin_oper[][12] = {
 static char rel_oper[][12] = {
   "EQ", "NE", "LT", "GT", "LE", "GE", "ULT", "ULE", "UGT", "UGE"};
  
-static void pr_stm(FILE *out, T_stm stm, int d)
+ void pr_stm(FILE *out, T_stm stm, int d)
 {
   switch (stm->kind) {
   case T_SEQ:
@@ -59,7 +59,7 @@ static void pr_stm(FILE *out, T_stm stm, int d)
   }
 }
 
-static void pr_tree_exp(FILE *out, T_exp exp, int d)
+ void pr_tree_exp(FILE *out, T_exp exp, int d)
 {
   switch (exp->kind) {
   case T_BINOP:
@@ -105,14 +105,4 @@ void printStmList (FILE *out, T_stmList stmList)
   }
 }
 
-void pr_tr(FILE *out, Tr_exp e, int d) {
-	if (e->kind == Tr_ex) {
-		pr_tree_exp(out, e->u.ex, d);
-	}
-	if (e->kind == Tr_nx) {
-		pr_stm(out, e->u.nx, d);
-	}
-	if (e->kind == Tr_cx) {
-		pr_stm(out, e->u.cx.stm, d);
-	}
-}
+

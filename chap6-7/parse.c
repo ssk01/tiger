@@ -26,12 +26,14 @@ A_exp parse(string fname)
 		pr_exp(out, absyn_root, 4);
 		printf("\n_________________________________________\n");
 		SEM_transProg(absyn_root);
-
+		printf("\n_________________________________________\n");
+		printFrag();
 	}
 	else return NULL;
 }
 int main() {
-	parse("1.tig");
+	parse("fo.tig");
+	//parse("let.tig");
 	//parse("merge.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");

@@ -8,11 +8,14 @@ typedef struct Tr_expList_ *Tr_expList;
 typedef struct patchList_ *patchList;
 typedef struct Tr_access_ *Tr_access;
 typedef struct Tr_level_ *Tr_level;
+
 typedef struct Tr_accessList_ *Tr_accessList;
 struct Tr_expList_ {
 	Tr_exp head;
 	Tr_expList tail;
 };
+void printFrag();
+int trLevelParent(Tr_level l);
 Tr_expList Tr_ExpList(Tr_exp head,Tr_expList tail);
 struct Tr_accessList_ {
 	Tr_access head;
@@ -88,3 +91,4 @@ struct F_fragList_ {
 	F_frag head;
 	F_fragList tail;
 };
+//void printFrag();

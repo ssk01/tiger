@@ -15,6 +15,7 @@ static int breakCount = 0;
 static void addbreakCount() {
 	breakCount++;
 }
+
 void SEM_transProg(A_exp exp) {
 	struct expty et;
 	S_table t = E_base_tenv();
@@ -24,7 +25,7 @@ void SEM_transProg(A_exp exp) {
 	et = transExp(breakk, Tr_outermost(), v, t, exp);
 	//FILE* out = fopen("tr_exp.txt", "w+");
 	FILE* out = stdout;
-	pr_tr(out, et.exp, 4);
+	//pr_tr(out,  et.exp, 4);
 	printf("\n_________________________________________\n");
 	printf("\nthis exp return: "); 
 	Ty_tyKind(et.ty);
@@ -395,21 +396,24 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 	}
 	case A_forExp: {
 		A_dec i_dec = A_VarDec(a->pos, a->u.forr.var, NULL, a->u.forr.lo);
-		A_dec limit_dec = A_VarDec(a->pos, S_Symbol(String("limit")), NULL, a->u.forr.hi);
+		A_dec limit_dec = A_VarDec(a->pos, S_Symbol(String("high")), NULL, a->u.forr.hi);
 		A_dec test_dec = A_VarDec(a->pos, S_Symbol(String("test")), NULL, A_IntExp(a->pos, 1));
 		A_decList for_dec = A_DecList(i_dec,
 			A_DecList(limit_dec,
 				A_DecList(test_dec, NULL)));
-		A_exp i_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var));
-		A_exp limit_Exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("limit"))));
-		A_exp thenexp = A_AssignExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var), A_OpExp(a->pos, A_plusOp, i_exp, A_IntExp(a->pos, 1)));
-		A_exp elseexp = A_AssignExp(a->pos, S_Symbol(String("test")), A_IntExp(a->pos, 0));
-		A_exp limit_test_exp = A_IfExp(a->pos, A_OpExp(a->pos, A_ltOp, i_exp, limit_Exp), thenexp, elseexp);
-		A_exp forSeqExp = A_SeqExp(a->pos, A_ExpList(a->u.forr.body, A_ExpList(limit_test_exp, NULL)));
+		A_exp low_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var));
 		A_exp test_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("test"))));
+		
+		A_exp high_Exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("high"))));
+		A_exp thenexp = A_AssignExp(a->pos, A_SimpleVar(a->pos, a->u.forr.var), A_OpExp(a->pos, A_plusOp, low_exp, A_IntExp(a->pos, 1)));
+		A_exp elseexp = A_AssignExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("test"))), A_IntExp(a->pos, 0));
+		A_exp limit_test_exp = A_IfExp(a->pos, A_OpExp(a->pos, A_ltOp, low_exp, high_Exp), thenexp, elseexp);
+		A_exp forSeqExp = A_SeqExp(a->pos, A_ExpList(a->u.forr.body, A_ExpList(limit_test_exp, NULL)));
+	/*	A_exp test_exp = A_VarExp(a->pos, A_SimpleVar(a->pos, S_Symbol(String("test"))));*/
 		A_exp whileExp = A_WhileExp(a->pos, test_exp, forSeqExp);
-		A_exp if_Exp = A_IfExp(a->pos, A_OpExp(a->pos, A_leOp, a->u.forr.lo, a->u.forr.hi), whileExp, NULL);
-		return transExp(breakk, level, venv, tenv, if_Exp);
+		A_exp if_Exp = A_IfExp(a->pos, A_OpExp(a->pos, A_leOp, low_exp, high_Exp), whileExp, NULL);
+		A_exp let_exp = A_LetExp(a->pos, for_dec, if_Exp);
+		return transExp(breakk, level, venv, tenv, let_exp);
 		/*expty exp;
 		expty lo = transExp(breakk, level, venv, tenv, a->u.forr.hi);
 		expty hi = transExp(breakk, level, venv, tenv, a->u.forr.lo);
@@ -531,10 +535,13 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		}
 		exp = transExp(breakk, level, venv, tenv, a->u.let.body);
 		explist = Tr_ExpList(exp.exp, explist);
-		Tr_expList letexp = Tr_letExp(explist);
+		Tr_exp letexp = Tr_letExp(explist);
 		S_endScope(tenv);
 		S_endScope(venv);
-		return exp;
+		if (!trLevelParent(level)) {
+			Tr_procEntryExit(level, letexp);
+		}
+		return expTy(letexp, exp.ty);
 		break;
 	}
 	default:
