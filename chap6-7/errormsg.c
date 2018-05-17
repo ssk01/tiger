@@ -64,6 +64,10 @@ void EM_reset(string fname)
 	anyErrors = FALSE; fileName = fname; lineNum = 1;
 	linePos = intList(0, NULL);
 	yyin = fopen(fname, "r");
+	char a[4096];
+	//fread(a, 4096, 1, yyin);
+	//printf("%s\n", a);
+	//exit(0);
 	if (!yyin) { EM_error(0, "cannot open"); exit(1); }
 }
 void fck(string a) {

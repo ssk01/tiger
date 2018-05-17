@@ -1482,6 +1482,7 @@ yyreduce:
 	case 6:
 #line 129 "tiger.grm" /* yacc.c:1646  */
 	{
+		printf("wtf %s \n", (yyvsp[0].sval));
 		(yyval.exp) = A_StringExp(0, (yyvsp[0].sval));
 	}
 #line 1488 "y.tab.c" /* yacc.c:1646  */
@@ -2136,6 +2137,7 @@ yyreduce:
 	case 83:
 #line 477 "tiger.grm" /* yacc.c:1646  */
 	{
+		//printf("symbol %s\n", (yyvsp[0].sval));
 		(yyval.symbol) = S_Symbol((yyvsp[0].sval));
 	}
 #line 2142 "y.tab.c" /* yacc.c:1646  */

@@ -32,7 +32,11 @@ A_exp parse(string fname)
 	else return NULL;
 }
 int main() {
-	parse("fo.tig");
+	//parse("print.tig");
+	parse("record.tig");
+	//parse("string.tig");
+	//parse("array.tig");
+	//parse("for.tig");
 	//parse("let.tig");
 	//parse("merge.tig");
 	//parse("m.tig");

@@ -259,6 +259,7 @@ Tr_exp Tr_callExp(Temp_label fun, Tr_level def_level, Tr_level call_level, Tr_ex
 	while (call_level && call_level != def_level->parent) {
 		F_access staticLink = F_formals(call_level->frame)->head;
 		framePtr = F_Exp(staticLink, framePtr);
+		call_level = call_level->parent;
 	}
 	T_expList targs = T_ExpList(framePtr, NULL);
 	T_expList realargs = NULL;
@@ -277,7 +278,7 @@ Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init) {
 }
 
 Tr_exp Tr_recordExp(Tr_expList recExpList, int attrNum) {
-	int i = 0;
+	int i = attrNum-1;
 	Temp_temp t = Temp_newtemp();
 	T_expList args = T_ExpList(T_Const(attrNum*FRAME_WORD_SIZE), NULL);
 	T_stm t_malloc = T_Move(T_Temp(t), ExternCall(String("malloc"), args));
@@ -493,6 +494,6 @@ void printFrag() {
 	l = stringFragList;
 	printf("\nstring frag \n");
 	for (; l; l = l->tail) {
-		printf("  string: %s\n", l->head->u.stringg.str);
+		printf("name:%s,   string: %s\n", S_name(l->head->u.stringg.label),l->head->u.stringg.str);
 	}
 }

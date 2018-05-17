@@ -553,7 +553,12 @@ char str[1024];
 int strSize = 0;
 void append(char c) {
 	str[strSize] = c;
-	strSize += 1;
+	if (c == '\0') {
+		strSize = 0;
+	}
+	else {
+		strSize += 1;
+	}
 }
 
 
