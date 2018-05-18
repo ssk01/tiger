@@ -25,7 +25,7 @@ void SEM_transProg(A_exp exp) {
 	et = transExp(breakk, Tr_outermost(), v, t, exp);
 	//FILE* out = fopen("tr_exp.txt", "w+");
 	FILE* out = stdout;
-	//pr_tr(out,  et.exp, 4);
+	pr_tr(out,  et.exp, 4);
 	printf("\n_________________________________________\n");
 	printf("\nthis exp return: "); 
 	Ty_tyKind(et.ty);
@@ -253,6 +253,9 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 }
 
 expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_exp a) {
+	if (a == NULL) {
+		return expTy(Tr_noExp, Ty_Int());
+	}
 	switch (a->kind)
 	{
 	case A_varExp:{
@@ -364,34 +367,53 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		break;
 	}
 	case A_ifExp: {
-		expty test = transExp(breakk, level, venv, tenv, a->u.iff.test);
-		if (test.ty == Ty_Int()) {
-			expty then = expTy(NULL, Ty_Void());
-			expty elsee = expTy(NULL, Ty_Void());
-			if (a->u.iff.then != NULL) {
-				then = transExp(breakk, level, venv, tenv, a->u.iff.then);
-			}
-			if (a->u.iff.elsee != NULL) {
-				elsee = transExp(breakk, level, venv, tenv, a->u.iff.elsee);
-			}
-			Tr_exp res = Tr_ifExp(test.exp, then.exp, elsee.exp);
-			if (then.ty == elsee.ty) {
-				return expTy(res, elsee.ty);
-			}
-			else if (then.ty == Ty_Nil()) {
-				return expTy(res, elsee.ty);
-			}
-			else if (elsee.ty == Ty_Nil()) {
-				return expTy(res, then.ty);
-			}
-			else {
-				fck("if return type not equal");
+		expty then = expTy(NULL, Ty_Void());
+		expty elsee = expTy(NULL, Ty_Void());
+		if (a->u.iff.then != NULL) {
+			then = transExp(breakk, level, venv, tenv, a->u.iff.then);
+		}
+		if (a->u.iff.elsee != NULL) {
+			elsee = transExp(breakk, level, venv, tenv, a->u.iff.elsee);
+		}
+		if (a->u.iff.test->kind == A_ifExp) {
+			A_exp innerIf = a->u.iff.test;
+			if (innerIf->u.iff.then->kind == A_intExp && innerIf->u.iff.then->u.intt == 1) {
+				expty intterTest = transExp(breakk, level, venv, tenv, innerIf->u.iff.elsee);
+				expty newTest = transExp(breakk, level, venv, tenv, A_IfExp(a->pos, innerIf->u.iff.test, a->u.iff.then, a->u.iff.elsee));
+				return expTy(Tr_ifExp(intterTest.exp, then.exp, newTest.exp), then.ty);
 			}
 		}
 		else {
-			fck("if test type != int");
-			Ty_print(test.ty);
+			expty test = transExp(breakk, level, venv, tenv, a->u.iff.test);
+			if (test.ty == Ty_Int()) {
+				//expty then = expTy(NULL, Ty_Void());
+				//expty elsee = expTy(NULL, Ty_Void());
+				//if (a->u.iff.then != NULL) {
+				//	then = transExp(breakk, level, venv, tenv, a->u.iff.then);
+				//}
+				//if (a->u.iff.elsee != NULL) {
+				//	elsee = transExp(breakk, level, venv, tenv, a->u.iff.elsee);
+				//}
+				Tr_exp res = Tr_ifExp(test.exp, then.exp, elsee.exp);
+				if (then.ty == elsee.ty) {
+					return expTy(res, elsee.ty);
+				}
+				else if (then.ty == Ty_Nil()) {
+					return expTy(res, elsee.ty);
+				}
+				else if (elsee.ty == Ty_Nil()) {
+					return expTy(res, then.ty);
+				}
+				else {
+					fck("if return type not equal");
+				}
+			}
+			else {
+				fck("if test type != int");
+				Ty_print(test.ty);
+			}
 		}
+		
 		break;
 	}
 	case A_forExp: {

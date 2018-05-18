@@ -33,12 +33,17 @@ A_exp parse(string fname)
 }
 int main() {
 	//parse("print.tig");
-	parse("record.tig");
+	//parse("record.tig");
+	//parse("6.tig");
+	//parse("fac1.tig");
 	//parse("string.tig");
 	//parse("array.tig");
 	//parse("for.tig");
 	//parse("let.tig");
 	//parse("merge.tig");
+	//parse("queens.tig");
+	parse("if2.tig");
+	//parse("if1.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");
 	//parse("16.tig");
