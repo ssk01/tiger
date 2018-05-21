@@ -1,0 +1,8 @@
+let
+var i:="asfsdf"
+var j:="mlgb"
+in
+ i := "wrd"
+end
+
+

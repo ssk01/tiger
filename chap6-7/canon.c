@@ -8,7 +8,7 @@
 #include "temp.h"
 #include "tree.h"
 #include "canon.h"
-
+#include "printtree.h"
 typedef struct expRefList_ *expRefList;
 struct expRefList_ {T_exp *head; expRefList tail;};
 
@@ -106,8 +106,15 @@ static struct stmExp do_exp(T_exp exp)
 static T_stm do_stm(T_stm stm)
 {
   switch (stm->kind) {
-  case T_SEQ: 
-    return seq(do_stm(stm->u.SEQ.left), do_stm(stm->u.SEQ.right));
+  case T_SEQ: {
+	  T_stm l = do_stm(stm->u.SEQ.left);
+	  //pr_stm(stdout, l, 4);
+	  T_stm r = do_stm(stm->u.SEQ.right);
+	  //pr_stm(stdout, r, 4);
+
+    return seq(l, r);
+
+  }
   case T_JUMP:
     return seq(reorder(ExpRefList(&stm->u.JUMP.exp, NULL)), stm);
   case T_CJUMP:
@@ -150,7 +157,11 @@ static T_stmList linear(T_stm stm, T_stmList right)
       2.  The parent of every CALL is an EXP(..) or a MOVE(TEMP t,..) */
 T_stmList C_linearize(T_stm stm)
 {
-    return linear(do_stm(stm), NULL);
+	pr_stm(stdout, stm, 4);
+	T_stmList stmList =  linear(do_stm(stm), NULL);
+    printStmList(stdout,  stmList);
+
+	return stmList;
 }
 
 static C_stmListList StmListList(T_stmList head, C_stmListList tail)
@@ -298,10 +309,17 @@ T_stmList C_traceSchedule(struct C_block b)
 { C_stmListList sList;
   block_env = S_empty();
   global_block = b;
+  S_enter(block_env, b.label, NULL);
 
   for (sList=global_block.stmLists; sList; sList=sList->tail) {
+	  //C_stmListList stl;
+	  printf("_____________________\n");
+
+		  printStmList(stdout, sList->head);
     S_enter(block_env, sList->head->head->u.LABEL, sList->head);
   }
+  printf("_____________________\n");
+
 
   return getNext();
 }

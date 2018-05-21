@@ -3,6 +3,7 @@
 #include "absyn.h"
 #include "tree.h"
 #include "frame.h"
+#include "canon.h"
 typedef struct Tr_exp_ *Tr_exp;
 typedef struct Tr_expList_ *Tr_expList;
 typedef struct patchList_ *patchList;
@@ -67,7 +68,7 @@ Tr_exp Tr_binOp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
 Tr_exp Tr_seqExp(Tr_expList seqList);
 Tr_exp Tr_stringCmpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
 Tr_exp Tr_comOpExp(A_oper op, Tr_exp left_exp, Tr_exp right_exp);
-void Tr_procEntryExit(Tr_level level, Tr_exp body);
+void Tr_procEntryExit(Tr_level level, string name, Tr_exp body);
 void do_Patch(patchList tList, Temp_label label);
 static T_exp unEx(Tr_exp e);
 static T_stm unNx(Tr_exp e);
@@ -84,6 +85,7 @@ struct  F_frag_ {
 		} stringg;
 		struct {
 			T_stm body; F_frame frame;
+		string name;
 		} proc;
 	}u;
 };
@@ -92,3 +94,4 @@ struct F_fragList_ {
 	F_fragList tail;
 };
 //void printFrag();
+T_stmList canon(Tr_exp stm);

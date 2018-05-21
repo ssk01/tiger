@@ -195,9 +195,10 @@ Tr_exp Tr_breakExp(Tr_exp breakk) {
 	assert(breakk != NULL);
 	return Tr_Nx(T_Jump(unEx(breakk), Temp_LabelList(unEx(breakk)->u.NAME, NULL)));
 }
-F_frag F_ProcFrag(T_stm body, F_frame frame) {
+F_frag F_ProcFrag(T_stm body, string name, F_frame frame) {
 	F_frag f = checked_malloc(sizeof(*f));
 	f->kind = F_processFlag;
+	f->u.proc.name = name;
 	f->u.proc.body = body;
 	f->u.proc.frame = frame;
 	return f;
@@ -218,8 +219,8 @@ F_fragList	F_FragList(F_frag head, F_fragList tail) {
 
 
 F_fragList fragList = NULL;
-void Tr_procEntryExit(Tr_level level, Tr_exp body) {
-	F_frag proc_flag = F_ProcFrag(unNx(body), level->frame);
+void Tr_procEntryExit(Tr_level level, string name, Tr_exp body) {
+	F_frag proc_flag = F_ProcFrag(unNx(body), name, level->frame);
 	fragList = F_FragList(proc_flag, fragList);
 }
 
@@ -487,13 +488,17 @@ void printFrag() {
 	F_fragList l = fragList;
 	printf("frame frag \n");
 	for (; l; l = l->tail) {
-		printf("  frame: %s\n", S_name(F_name(l->head->u.proc.frame)));
+		printf("  frame:   %s %s\n", l->head->u.proc.name, S_name(F_name(l->head->u.proc.frame)));
 		//void pr_tr(FILE *out, Tr_exp e, int d);
 		pr_tr(stdout, Tr_Nx( l->head->u.proc.body), 4);
+		printf("\n");
 	}
 	l = stringFragList;
 	printf("\nstring frag \n");
 	for (; l; l = l->tail) {
 		printf("name:%s,   string: %s\n", S_name(l->head->u.stringg.label),l->head->u.stringg.str);
 	}
+}
+T_stmList canon(Tr_exp stm) {
+	return C_traceSchedule(C_basicBlocks(C_linearize(unNx(stm))));
 }

@@ -4,6 +4,7 @@
 #include "errormsg.h"
 #include "translate.h"
 #include "printtree.h"
+#include "canon.h"
 #include <stdio.h>
 expty expTy(Tr_exp exp, Ty_ty ty) {
 	expty e;
@@ -16,6 +17,15 @@ static void addbreakCount() {
 	breakCount++;
 }
 
+int typeEq(S_table tenv, Ty_ty a, Ty_ty b) {
+	if (a == Ty_Nil() || b == Ty_Nil()) {
+		return 1;
+	}
+	if (actual_ty(tenv, a) == actual_ty(tenv, b)) {
+		return 1;
+	}
+	return 0;
+}
 void SEM_transProg(A_exp exp) {
 	struct expty et;
 	S_table t = E_base_tenv();
@@ -26,6 +36,11 @@ void SEM_transProg(A_exp exp) {
 	//FILE* out = fopen("tr_exp.txt", "w+");
 	FILE* out = stdout;
 	pr_tr(out,  et.exp, 4);
+	printf("\n_________________________________________\n");
+	//canon(et.exp);
+
+	printFrag();
+
 	printf("\n_________________________________________\n");
 	printf("\nthis exp return: "); 
 	Ty_tyKind(et.ty);
@@ -185,7 +200,7 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 			Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
 			Temp_label fun_lable = Temp_newlabel();
 			Tr_level newlevel = Tr_newLevel(level, fun_lable, makeBoolList(f->params));
-			S_enter(venv, f->name, E_FunEntry(newlevel, fun_lable, formalTys, resultTy));
+			S_enter(venv, f->name, E_FunEntry(newlevel, fun_lable, formalTys, resultTy, S_name(f->name)));
 		}
 		for (list = d->u.function; list; list = list->tail) {
 			A_fundec f = list->head;
@@ -209,7 +224,7 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 				if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
 					EM_error(0, "function result type not match %s", "");
 				}
-				Tr_procEntryExit(funEntry->u.fun.level, e.exp);
+				Tr_procEntryExit(funEntry->u.fun.level, funEntry->u.fun.name ,e.exp);
 				printf("ok fundec: %s \n", f->name->name);
 			}
 			S_endScope(venv);
@@ -254,7 +269,7 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 
 expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_exp a) {
 	if (a == NULL) {
-		return expTy(Tr_noExp, Ty_Int());
+		return expTy(Tr_noExp(), Ty_Int());
 	}
 	switch (a->kind)
 	{
@@ -375,6 +390,9 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		if (a->u.iff.elsee != NULL) {
 			elsee = transExp(breakk, level, venv, tenv, a->u.iff.elsee);
 		}
+		if (!typeEq(tenv, then.ty, elsee.ty)) {
+			fck("if type error");
+		}
 		if (a->u.iff.test->kind == A_ifExp) {
 			A_exp innerIf = a->u.iff.test;
 			if (innerIf->u.iff.then->kind == A_intExp && innerIf->u.iff.then->u.intt == 1) {
@@ -382,6 +400,12 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 				expty newTest = transExp(breakk, level, venv, tenv, A_IfExp(a->pos, innerIf->u.iff.test, a->u.iff.then, a->u.iff.elsee));
 				return expTy(Tr_ifExp(intterTest.exp, then.exp, newTest.exp), then.ty);
 			}
+			else if (innerIf->u.iff.elsee->kind == A_intExp && innerIf->u.iff.elsee->u.intt == 0) {
+				expty intterTest = transExp(breakk, level, venv, tenv, innerIf->u.iff.then);
+				expty newTest = transExp(breakk, level, venv, tenv, A_IfExp(a->pos, innerIf->u.iff.test, a->u.iff.then, a->u.iff.elsee));
+				return expTy(Tr_ifExp(intterTest.exp, newTest.exp, elsee.exp), then.ty);
+			}
+			assert(0);
 		}
 		else {
 			expty test = transExp(breakk, level, venv, tenv, a->u.iff.test);
@@ -395,6 +419,10 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 				//	elsee = transExp(breakk, level, venv, tenv, a->u.iff.elsee);
 				//}
 				Tr_exp res = Tr_ifExp(test.exp, then.exp, elsee.exp);
+				//if (elsee.exp ==)
+				if (then.ty == Ty_Void() || elsee.ty == Ty_Void()) {
+					return expTy(res, Ty_Void());
+				}
 				if (then.ty == elsee.ty) {
 					return expTy(res, elsee.ty);
 				}
@@ -561,7 +589,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		S_endScope(tenv);
 		S_endScope(venv);
 		if (!trLevelParent(level)) {
-			Tr_procEntryExit(level, letexp);
+			Tr_procEntryExit(level, "letme",  letexp);
 		}
 		return expTy(letexp, exp.ty);
 		break;

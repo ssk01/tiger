@@ -1,0 +1,7 @@
+let 
+
+ type any = int
+ 
+in
+1
+end

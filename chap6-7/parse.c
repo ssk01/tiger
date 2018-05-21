@@ -27,7 +27,7 @@ A_exp parse(string fname)
 		printf("\n_________________________________________\n");
 		SEM_transProg(absyn_root);
 		printf("\n_________________________________________\n");
-		printFrag();
+
 	}
 	else return NULL;
 }
@@ -40,10 +40,10 @@ int main() {
 	//parse("array.tig");
 	//parse("for.tig");
 	//parse("let.tig");
-	//parse("merge.tig");
+	parse("merge.tig");
+	//parse("inner.tig");
 	//parse("queens.tig");
-	parse("if2.tig");
-	//parse("if1.tig");
+	//parse("queens.tig");
 	//parse("m.tig");
 	//parse("testcases/test16.tig");
 	//parse("16.tig");

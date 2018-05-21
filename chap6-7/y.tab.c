@@ -1515,7 +1515,7 @@ yyreduce:
 	case 10:
 #line 144 "tiger.grm" /* yacc.c:1646  */
 	{
-		(yyval.exp) = A_OpExp(0, MINUS, A_IntExp(0, 0), (yyvsp[0].exp));
+		(yyval.exp) = A_OpExp(0, A_minusOp, A_IntExp(0, 0), (yyvsp[0].exp));
 		log("UMINUS");
 	}
 #line 1521 "y.tab.c" /* yacc.c:1646  */
