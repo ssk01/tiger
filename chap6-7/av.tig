@@ -1,7 +1,0 @@
-let
-
-
- var col := [ N ] of 0 : intArray
-in 
-1 
-end

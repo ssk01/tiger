@@ -1,8 +1,0 @@
-let 
-var i:=1
-in
-while 1 do
-   (break;print(""));
- 1;
- break
-end
