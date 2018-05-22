@@ -1,6 +1,3 @@
-#pragma once
-//#include "tree.h"
-#include "translate.h"
 /*
  * canon.h - Definitions for canon.c which converts the IR trees into
  *           basic blocks and traces.

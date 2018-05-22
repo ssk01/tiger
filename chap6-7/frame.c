@@ -9,7 +9,7 @@ struct F_frame_ {
 	int local_count;
 };
 
-
+Temp_map F_tempMap = NULL;
 struct F_access_ {
 	enum { inFrame, inReg } kind;
 	union {
