@@ -61,7 +61,7 @@ void *TAB_look(TAB_table t, void *key)
 	for (b = t->table[index]; b; b = b->next)
 		if (b->key == key) return b->value;
 	printf("\n%s\n", ((S_symbol)key)->name);
-	assert(0);
+	//assert(0);
 	
 	return NULL;
 }
