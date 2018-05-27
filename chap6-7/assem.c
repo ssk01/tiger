@@ -87,6 +87,7 @@ static void format(char *result, string assem,
 {
 	char *p;
 	int i = 0; /* offset to result string */
+	//printf("assem:%s\n", assem);
 	for (p = assem; p && *p != '\0'; p++)
 		if (*p == '`')
 			switch (*(++p)) {
@@ -141,6 +142,24 @@ void AS_print(FILE *out, AS_instr i, Temp_map m)
 /* c should be COL_color; temporarily it is not */
 void AS_printInstrList(FILE *out, AS_instrList iList, Temp_map m)
 {
+	//AS_instrList assem;
+	//for (assem = iList; assem; assem = assem->tail) {
+	//	switch (assem->head->kind)
+	//	{
+	//	case I_OPER: {
+	//		printf("%s\n", assem->head->u.OPER.assem);
+	//	}
+	//	case I_LABEL: {
+	//		printf("%s\n", assem->head->u.LABEL.assem);
+	//	}
+	//	case I_MOVE: {
+	//		printf("%s\n", assem->head->u.MOVE.assem);
+	//	}
+	//	default:
+	//		break;
+	//	}
+
+	//}
 	for (; iList; iList = iList->tail) {
 		AS_print(out, iList->head, m);
 	}

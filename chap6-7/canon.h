@@ -1,3 +1,4 @@
+#pragma once
 /*
  * canon.h - Definitions for canon.c which converts the IR trees into
  *           basic blocks and traces.

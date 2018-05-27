@@ -90,6 +90,13 @@ Temp_temp F_FP() {
 	}
 	return fp;
 }
+static void F_add_to_map(string str, Temp_temp temp)
+{
+	if (!F_tempMap) {
+		F_tempMap = Temp_name();
+	}
+	Temp_enter(F_tempMap, temp, str);
+}
 T_exp F_Exp(F_access acc, T_exp framePtr) {
 	return T_Mem(T_Binop(T_plus, framePtr, T_Const(acc->u.offset)));
 }

@@ -74,11 +74,10 @@ static T_exp unEx(Tr_exp e);
 static T_stm unNx(Tr_exp e);
 static struct Cx unCx(Tr_exp e);
 void Cxinit(struct Cx c, Temp_label t, Temp_label f);
-
 typedef struct F_fragList_ * F_fragList;
 typedef struct F_frag_ * F_frag;
 struct  F_frag_ {
-	enum { F_stringFlag, F_processFlag } kind;
+	enum { F_stringFrag, F_procFrag } kind;
 	union {
 		struct { Temp_label label;
 		string str;
@@ -94,4 +93,6 @@ struct F_fragList_ {
 	F_fragList tail;
 };
 //void printFrag();
+F_fragList Tr_getResult();
+void pr_tr(FILE *out, Tr_exp e, int d);
 T_stmList canon(Tr_exp stm);

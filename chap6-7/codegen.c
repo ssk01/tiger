@@ -34,7 +34,7 @@ static Temp_temp munchExp(T_exp e) {
 			Temp_temp r = Temp_newtemp();
 			if (e->u.BINOP.left->kind == T_CONST) {
 				T_exp e2 = e->u.BINOP.right;
-				int n = e->u.BINOP.left;
+				int n = e->u.BINOP.left->u.CONST;
 				Temp_temp s0 = munchExp(e2);
 				sprintf(assem_string, "$s `d0,`s0%s%d\n", op, sign, n);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL), NULL));
@@ -42,7 +42,7 @@ static Temp_temp munchExp(T_exp e) {
 			}
 			else if (e->u.BINOP.right->kind == T_CONST) {
 				T_exp e2 = e->u.BINOP.left;
-				int n = e->u.BINOP.right;
+				int n = e->u.BINOP.right->u.CONST;
 				Temp_temp s0 = munchExp(e2);
 				sprintf(assem_string, "$s `d0,`s0%s%d\n", op, sign, n);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL), NULL));
@@ -65,7 +65,7 @@ static Temp_temp munchExp(T_exp e) {
 			if (mem->kind == T_BINOP && mem->u.BINOP.op == T_plus) {
 				if (mem->u.BINOP.left->kind == T_CONST) {
 					T_exp e2 = mem->u.BINOP.right;
-					int n = mem->u.BINOP.left;
+					int n = mem->u.BINOP.left->u.CONST;
 					Temp_temp s0 = munchExp(e2);
 					sprintf(assem_string, "mov	`d0,[`s0+%d]\n", n);
 					emit(AS_Move(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL)));
@@ -73,7 +73,7 @@ static Temp_temp munchExp(T_exp e) {
 				}
 				else if (mem->u.BINOP.right->kind == T_CONST) {
 					T_exp e2 = mem->u.BINOP.left;
-					int n = mem->u.BINOP.right;
+					int n = mem->u.BINOP.right->u.CONST;
 					Temp_temp s0 = munchExp(e2);
 					sprintf(assem_string, "mov	`d0,[`s0+%d]\n", n);
 					emit(AS_Move(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL)));
@@ -113,6 +113,10 @@ static Temp_temp munchExp(T_exp e) {
 		}
 		case T_NAME: {
 			Temp_temp r = Temp_newtemp();
+			/*F_ass*/
+			if (!F_tempMap) {
+				F_tempMap = Temp_name();
+			}
 			Temp_enter(F_tempMap, r, Temp_labelstring(e->u.NAME));
 			return r;
 		}
@@ -122,6 +126,7 @@ static Temp_temp munchExp(T_exp e) {
 			sprintf(assem_string, "mov	`d0,%d\n", n);
 			emit(AS_Move(String(assem_string),
 				Temp_TempList(r, NULL), NULL));
+			return r;
 		}
 		case T_CALL:
 	default:
@@ -140,7 +145,7 @@ static Temp_temp munchStm(T_stm stm) {
 	}
 	case T_LABEL: {
 		sprintf(assem_string, "%s:\n", Temp_labelstring(stm->u.LABEL));
-		emit(AS_Label(assem_string, stm->u.LABEL));
+		emit(AS_Label(String(assem_string), stm->u.LABEL));
 		break;
 	}
 	case T_JUMP: {
@@ -184,7 +189,7 @@ static Temp_temp munchStm(T_stm stm) {
 			Temp_temp s0 = munchExp(src);
 			Temp_temp d0 = munchExp(dst);
 			sprintf(assem_string, "move `d0, `s0\n");
-			emit(AS_Move(String(assem_string), Temp_TempList(s0, NULL), Temp_TempList(d0, NULL)));
+			emit(AS_Move(String(assem_string), Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
 		}
 		else if (dst->kind == T_MEM) {
 			if (dst->u.MEM->kind == T_BINOP &&
@@ -193,7 +198,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.left);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.right->u.CONST;
-				sprintf(assem_string, "move `[s0 + %d], `s1\n", n);
+				sprintf(assem_string, "move [`s0 + %d]., `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_BINOP &&
@@ -202,7 +207,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.right);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.left->u.CONST;
-				sprintf(assem_string, "move `[s0 + %d], `s1\n", n);
+				sprintf(assem_string, "move [`s0 + %d].., `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_CONST) {
@@ -236,8 +241,22 @@ static Temp_temp munchStm(T_stm stm) {
 		munchExp(stm->u.EXP);
 		break;
 	}
+	//case T_ESEQ: {
+	//	printf("fck");
+	//}
 	default:
 		assert(0);
 		break;
 	}
+}
+
+AS_instrList F_codegen(F_frame frame, T_stmList stmList) {
+	AS_instrList asList = NULL;
+	T_stmList sList = stmList;
+	for (; sList; sList = sList->tail) {
+		munchStm(sList->head);
+	}
+	asList = instrList;
+	instrList = last = NULL;
+	return asList;
 }

@@ -197,7 +197,7 @@ Tr_exp Tr_breakExp(Tr_exp breakk) {
 }
 F_frag F_ProcFrag(T_stm body, string name, F_frame frame) {
 	F_frag f = checked_malloc(sizeof(*f));
-	f->kind = F_processFlag;
+	f->kind = F_procFrag;
 	f->u.proc.name = name;
 	f->u.proc.body = body;
 	f->u.proc.frame = frame;
@@ -205,7 +205,7 @@ F_frag F_ProcFrag(T_stm body, string name, F_frame frame) {
 }
 F_frag F_StringFrag(Temp_label lable, string str) {
 	F_frag f = checked_malloc(sizeof(*f));
-	f->kind = F_stringFlag;
+	f->kind = F_stringFrag;
 	f->u.stringg.label = lable;
 	f->u.stringg.str = str;
 	return f;
@@ -483,6 +483,17 @@ void pr_tr(FILE *out, Tr_exp e, int d) {
 	if (e->kind == Tr_cx) {
 		pr_stm(out, e->u.cx.stm, d);
 	}
+}
+F_fragList Tr_getResult() {
+	F_fragList prev = stringFragList;
+	if (!prev) {
+		return fragList;
+	}
+	while(prev->tail) {
+		prev = prev->tail;
+	}
+	prev->tail = fragList;
+	return stringFragList;
 }
 void printFrag() {
 	F_fragList l = fragList;

@@ -26,30 +26,31 @@ int typeEq(S_table tenv, Ty_ty a, Ty_ty b) {
 	}
 	return 0;
 }
-void SEM_transProg(A_exp exp) {
+F_fragList SEM_transProg(A_exp exp) {
 	struct expty et;
 	S_table t = E_base_tenv();
 	S_table v = E_base_venv();
 	Tr_exp breakk = NULL;
 
 	et = transExp(breakk, Tr_outermost(), v, t, exp);
+	
 	//FILE* out = fopen("tr_exp.txt", "w+");
 	FILE* out = stdout;
 	pr_tr(out,  et.exp, 4);
-	printf("\n_________________________________________\n");
+	//printf("\n_________________________________________\n");
 	//canon(et.exp);
 
-	printFrag();
+	//printFrag();
 
 	printf("\n_________________________________________\n");
 	printf("\nthis exp return: "); 
 	Ty_tyKind(et.ty);
+	return Tr_getResult();
 }
 static void testBreak() {
 	if (breakCount <= 0) {
 		fck("break not in for or while");
 	}
-
 }
 U_boolList makeBoolList(A_fieldList f) {
 	U_boolList l = NULL;
@@ -675,3 +676,4 @@ void Ty_tyKind(Ty_ty e) {
 	}
 
 }
+
