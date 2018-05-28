@@ -179,7 +179,6 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 				Ty_print(actual_ty(tenv, ty));
 				Ty_print(e.ty);
 				Ty_print(actual_ty(tenv, e.ty));
-
 				//? equal how
 				EM_error(0, "var dec type not equal %s", "");
 			}

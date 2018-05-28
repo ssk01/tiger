@@ -44,6 +44,7 @@ Tr_accessList Tr_formals(Tr_level l) {
 }
 
 Tr_access Tr_allocLocal(Tr_level l, bool escape) {
+	printf("Tr_allocLocal\n");
 	return newTr_access(l, F_allocLocal(l->frame, escape));
 }
 
@@ -62,7 +63,7 @@ Tr_level Tr_newLevel(Tr_level p, Temp_label n, U_boolList f)
 	Tr_level l = checked_malloc(sizeof(*l));
 	l->parent = p;
 	l->name = n;
-	l->frame = F_newFrame(n, U_BoolList(TRUE, f));
+	l->frame = F_newFrame(n, U_BoolList(FALSE, f));
 	l->formals = makeFormalAccessList(l);
 	return l;
 }

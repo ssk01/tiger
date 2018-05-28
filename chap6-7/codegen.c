@@ -5,13 +5,34 @@
 //static F_frame CODEGEN_frame = NULL; // for munchArgs
 static AS_instrList instrList = NULL, last = NULL;
 //Temp_map F_tempMap = NULL;
+F_frame codegenFrame = NULL;
 
+static Temp_temp munchExp(T_exp e);
 static void emit(AS_instr instr)
 {
+	printf("fuck");
 	if (!instrList) instrList = last = AS_InstrList(instr, NULL);
 	else last = last->tail = AS_InstrList(instr, NULL);
 }
 //char *AS_format(char *des, char *format, )
+static char *register_names[] = { "targ1", "targ2", "targ3", "targ4", "targ5", "targ6" };
+static unsigned int reg_count = 0;
+static Temp_tempList munchArgs(unsigned int n, T_expList elist) {
+	assert(codegenFrame != NULL);
+	char assem_string[100];
+	if (!elist ) return NULL;
+	Temp_tempList tlist = munchArgs(n + 1, elist->tail);
+	Temp_temp e = munchExp(elist->head);
+	//这个和frame里面分配参数情况不一样，而且reg_count数量还需要考虑。
+	//if (F_escape(formals->head)) {
+		sprintf(assem_string, "push `s0\n");
+		emit(AS_Oper(String(assem_string), NULL, Temp_TempList(e, NULL), NULL));
+	/*else {
+		sprintf(assem_string, "move %s, `s0\n", register_names[reg_count++]);
+		emit(AS_Move(String(assem_string), NULL, Temp_TempList(e, NULL)));
+	}*/
+	return Temp_TempList(e, tlist);
+}
 static Temp_temp munchExp(T_exp e) {
 	char assem_string[100];
 	//String()
@@ -36,7 +57,7 @@ static Temp_temp munchExp(T_exp e) {
 				T_exp e2 = e->u.BINOP.right;
 				int n = e->u.BINOP.left->u.CONST;
 				Temp_temp s0 = munchExp(e2);
-				sprintf(assem_string, "$s `d0,`s0%s%d\n", op, sign, n);
+				sprintf(assem_string, "%s `d0,`s0%s%d\n", op, sign, n);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL), NULL));
 				return r;
 			}
@@ -44,8 +65,9 @@ static Temp_temp munchExp(T_exp e) {
 				T_exp e2 = e->u.BINOP.left;
 				int n = e->u.BINOP.right->u.CONST;
 				Temp_temp s0 = munchExp(e2);
-				sprintf(assem_string, "$s `d0,`s0%s%d\n", op, sign, n);
+				sprintf(assem_string, "%s `d0,`s0%s%d\n", op, sign, n);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL), NULL));
+				return r;
 			}
 			else {
 				T_exp e1 = e->u.BINOP.left;
@@ -54,7 +76,7 @@ static Temp_temp munchExp(T_exp e) {
 				//AS_Oper(as
 				Temp_temp s0 = munchExp(e1);
 				Temp_temp s1 = munchExp(e2);
-				sprintf(assem_string, "$s `d0,`s0%s`s1\n", op, sign);
+				sprintf(assem_string, "%s `d0,`s0%s`s1\n", op, sign);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, Temp_TempList(s1, NULL)), NULL));
 				return r;
 			}
@@ -128,12 +150,20 @@ static Temp_temp munchExp(T_exp e) {
 				Temp_TempList(r, NULL), NULL));
 			return r;
 		}
-		case T_CALL:
+		case T_CALL: {
+			Temp_temp r = munchExp(e->u.CALL.fun);
+			Temp_tempList list = munchArgs(0, e->u.CALL.args);
+			sprintf(assem_string, "call	`s0\n");
+
+			emit(AS_Oper(String(assem_string), F_caller_saves(), Temp_TempList(r, list), NULL));
+			return r;
+		}
+
 	default:
 		break;
 	}
 }
-static Temp_temp munchStm(T_stm stm) {
+static void munchStm(T_stm stm) {
 	char assem_string[100];
 
 	switch (stm->kind)
@@ -188,7 +218,7 @@ static Temp_temp munchStm(T_stm stm) {
 		if (dst->kind == T_TEMP) {
 			Temp_temp s0 = munchExp(src);
 			Temp_temp d0 = munchExp(dst);
-			sprintf(assem_string, "move `d0, `s0\n");
+			sprintf(assem_string, "mov `d0, `s0\n");
 			emit(AS_Move(String(assem_string), Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
 		}
 		else if (dst->kind == T_MEM) {
@@ -198,7 +228,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.left);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.right->u.CONST;
-				sprintf(assem_string, "move [`s0 + %d]., `s1\n", n);
+				sprintf(assem_string, "mov [`s0 + %d], `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_BINOP &&
@@ -207,7 +237,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.right);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.left->u.CONST;
-				sprintf(assem_string, "move [`s0 + %d].., `s1\n", n);
+				sprintf(assem_string, "mov [`s0 + %d], `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_CONST) {
@@ -253,6 +283,7 @@ static Temp_temp munchStm(T_stm stm) {
 AS_instrList F_codegen(F_frame frame, T_stmList stmList) {
 	AS_instrList asList = NULL;
 	T_stmList sList = stmList;
+	codegenFrame = frame;
 	for (; sList; sList = sList->tail) {
 		munchStm(sList->head);
 	}

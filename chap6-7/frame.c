@@ -17,8 +17,14 @@ struct F_access_ {
 		Temp_temp reg;
 	} u;
 };
-
-
+int F_escape(F_access ac) {
+	assert(ac != NULL);
+	if (ac->kind == inFrame) {
+		return 0;
+	}
+	return 1;
+}
+static void F_add_to_map(string str, Temp_temp temp);
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals);
 static F_access InFrame(int offset1);
 static F_access InReg(Temp_temp reg);
@@ -53,6 +59,40 @@ F_frame F_newFrame(Temp_label name, U_boolList formals) {
 	f->local_count = 0;
 	return f;
 }
+static Temp_tempList F_make_arg_regs(void)
+{
+	Temp_temp eax = Temp_newtemp(), ebx = Temp_newtemp(),
+		ecx = Temp_newtemp(), edx = Temp_newtemp(), edi = Temp_newtemp(),
+		esi = Temp_newtemp();
+	F_add_to_map("eax", eax); F_add_to_map("ebx", ebx); F_add_to_map("ecx", ecx);
+	F_add_to_map("edx", edx); F_add_to_map("edi", edi); F_add_to_map("esi", esi);
+	return Temp_TempList(eax, Temp_TempList(ebx, Temp_TempList(ecx, Temp_TempList(edx, Temp_TempList(edi, Temp_TempList(esi, NULL))))));
+}
+
+static Temp_temp rv = NULL;
+Temp_temp F_RV(void)
+{
+	if (!rv) {
+		rv = Temp_newtemp();
+		F_add_to_map("eax", rv);
+	}
+	return rv;
+}
+
+static Temp_tempList F_make_caller_saves(void)
+{
+	return Temp_TempList(F_RV(), F_make_arg_regs());
+}
+Temp_tempList F_caller_saves(void)
+{
+	static Temp_tempList caller_saves = NULL;
+	if (!caller_saves) {
+		caller_saves = F_make_caller_saves();
+	}
+	return caller_saves;
+}
+
+
 
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals) {
 	F_accessList acl = NULL;
@@ -60,12 +100,12 @@ static F_accessList makeFormalAccessList(F_frame f, U_boolList formals) {
 	int i = 0;
 	for (; formals; formals = formals->tail) {
 
-		if (!formals->head && i < 6) {
+	/*	if (!formals->head && i < 6) {
 			ac = InReg(Temp_newtemp());
 		}
-		else {
-			ac = InFrame((1+i)*FRAME_WORD_SIZE);
-		}
+		else {*/
+			ac = InFrame((2+i)*FRAME_WORD_SIZE);
+		//}
 		acl = F_AccessList(ac, acl);
 		i++;
 	}
@@ -87,6 +127,7 @@ static Temp_temp fp = NULL;
 Temp_temp F_FP() {
 	if (fp == NULL) {
 		fp = Temp_newtemp();
+		F_add_to_map("ebp", fp);
 	}
 	return fp;
 }

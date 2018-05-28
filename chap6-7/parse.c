@@ -25,7 +25,9 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
 	AS_instrList iList;
 	stmList = C_linearize(body);
 	stmList = C_traceSchedule(C_basicBlocks(stmList));
+	printf("___________________________________\n");
 	printStmList(stdout, stmList);
+	printf("___________________________________\n");
 	iList = F_codegen(frame, stmList); /* 9 */
 
 	fprintf(out, "BEGIN %s\n", Temp_labelstring(F_name(frame)));
@@ -43,13 +45,15 @@ A_exp parse(string fname)
 		//pr_exp(out, absyn_root, 4);
 		printf("\n_________________________________________\n");
 		F_fragList frags = SEM_transProg(absyn_root);
-		if (anyErrors) return 1; /* don't continue */
+		if (anyErrors) return NULL; /* don't continue */
 		
 		/* convert the filename */
 		/* Chapter 8, 9, 10, 11 & 12 */
-		for (;frags;frags=frags->tail)
-		    if (frags->head->kind == F_procFrag) 
+		for (; frags; frags = frags->tail)
+			if (frags->head->kind == F_procFrag) {
+				printf("proc:%s, %s\n", frags->head->u.proc.name, S_name(F_name(frags->head->u.proc.frame)));
 		    doProc(out, frags->head->u.proc.frame, frags->head->u.proc.body);
+			}
 		    else if (frags->head->kind == F_stringFrag) 
 		    fprintf(out, "%s\n", frags->head->u.stringg.str);
 		//fclose(out);
@@ -67,7 +71,7 @@ int main() {
 	//parse("array.tig");
 	//parse("for.tig");
 	//parse("let.tig");
-	parse("let1.tig");
+	parse("fun.tig");
 	//parse("inner.tig");
 	//parse("queens.tig");
 	//parse("queens.tig");
