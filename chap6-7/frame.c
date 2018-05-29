@@ -70,6 +70,15 @@ static Temp_tempList F_make_arg_regs(void)
 }
 
 static Temp_temp rv = NULL;
+static Temp_temp v = NULL;
+Temp_temp F_VOID(void)
+{
+	if (!v) {
+		v = Temp_newtemp();
+		F_add_to_map("void", v);
+	}
+	return v;
+}
 Temp_temp F_RV(void)
 {
 	if (!rv) {
@@ -124,12 +133,20 @@ static F_access InReg(Temp_temp reg) {
 	return a;
 }
 static Temp_temp fp = NULL;
+static Temp_temp sp = NULL;
 Temp_temp F_FP() {
 	if (fp == NULL) {
 		fp = Temp_newtemp();
 		F_add_to_map("ebp", fp);
 	}
 	return fp;
+}
+Temp_temp F_SP() {
+	if (sp == NULL) {
+		sp = Temp_newtemp();
+		F_add_to_map("esp", sp);
+	}
+	return sp;
 }
 static void F_add_to_map(string str, Temp_temp temp)
 {

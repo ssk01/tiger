@@ -19,7 +19,7 @@ extern bool anyErrors ;
 
 /* parse source file fname;
    return abstract syntax data structure */
-static void doProc(FILE *out, F_frame frame, T_stm body)
+static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 {
 	T_stmList stmList;
 	AS_instrList iList;
@@ -28,7 +28,7 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
 	printf("___________________________________\n");
 	printStmList(stdout, stmList);
 	printf("___________________________________\n");
-	iList = F_codegen(frame, stmList); /* 9 */
+	iList = F_codegen(frame, stmList, i); /* 9 */
 
 	fprintf(out, "BEGIN %s\n", Temp_labelstring(F_name(frame)));
 	AS_printInstrList(out, iList,
@@ -49,10 +49,11 @@ A_exp parse(string fname)
 		
 		/* convert the filename */
 		/* Chapter 8, 9, 10, 11 & 12 */
+		int i = 0;
 		for (; frags; frags = frags->tail)
 			if (frags->head->kind == F_procFrag) {
 				printf("proc:%s, %s\n", frags->head->u.proc.name, S_name(F_name(frags->head->u.proc.frame)));
-		    doProc(out, frags->head->u.proc.frame, frags->head->u.proc.body);
+		    doProc(out, frags->head->u.proc.frame, frags->head->u.proc.body, i++);
 			}
 		    else if (frags->head->kind == F_stringFrag) 
 		    fprintf(out, "%s\n", frags->head->u.stringg.str);
@@ -72,6 +73,8 @@ int main() {
 	//parse("for.tig");
 	//parse("let.tig");
 	parse("fun.tig");
+	//parse("2.tig");
+
 	//parse("inner.tig");
 	//parse("queens.tig");
 	//parse("queens.tig");

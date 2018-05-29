@@ -52,7 +52,8 @@ static Temp_temp munchExp(T_exp e) {
 				assert(0 && "Invalid operator");
 			}
 			//if (1)
-			Temp_temp r = Temp_newtemp();
+			Temp_temp r = F_RV();
+				
 			if (e->u.BINOP.left->kind == T_CONST) {
 				T_exp e2 = e->u.BINOP.right;
 				int n = e->u.BINOP.left->u.CONST;
@@ -156,14 +157,14 @@ static Temp_temp munchExp(T_exp e) {
 			sprintf(assem_string, "call	`s0\n");
 
 			emit(AS_Oper(String(assem_string), F_caller_saves(), Temp_TempList(r, list), NULL));
-			return r;
+			return F_VOID();
 		}
 
 	default:
 		break;
 	}
 }
-static void munchStm(T_stm stm) {
+static Temp_temp munchStm(T_stm stm) {
 	char assem_string[100];
 
 	switch (stm->kind)
@@ -176,12 +177,14 @@ static void munchStm(T_stm stm) {
 	case T_LABEL: {
 		sprintf(assem_string, "%s:\n", Temp_labelstring(stm->u.LABEL));
 		emit(AS_Label(String(assem_string), stm->u.LABEL));
+		return F_VOID();
 		break;
 	}
 	case T_JUMP: {
 		Temp_temp r = munchExp(stm->u.JUMP.exp);
 		sprintf(assem_string, "jmp	`d0\n");
 		emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), NULL, AS_Targets(stm->u.JUMP.jumps)));
+		return F_VOID();
 		break;
 
 	}
@@ -268,7 +271,7 @@ static void munchStm(T_stm stm) {
 
 	}
 	case T_EXP: {
-		munchExp(stm->u.EXP);
+		return munchExp(stm->u.EXP);
 		break;
 	}
 	//case T_ESEQ: {
@@ -278,15 +281,42 @@ static void munchStm(T_stm stm) {
 		assert(0);
 		break;
 	}
+	return NULL;
 }
 
-AS_instrList F_codegen(F_frame frame, T_stmList stmList) {
+AS_instrList F_codegen(F_frame frame, T_stmList stmList, int i) {
 	AS_instrList asList = NULL;
 	T_stmList sList = stmList;
 	codegenFrame = frame;
-	for (; sList; sList = sList->tail) {
+	int first = 1;
+	char assem_string[100];
+	if (i) {
+		assert(sList->head != NULL);
 		munchStm(sList->head);
+		sList = sList->tail;
+		sprintf(assem_string, "push `s0\n");
+		emit(AS_Oper(String(assem_string), NULL, Temp_TempList(F_FP(), NULL), NULL));
+		sprintf(assem_string, "mov `d0, `s0\n");
+		emit(AS_Oper(String(assem_string), Temp_TempList(F_FP(), NULL), Temp_TempList(F_SP(), NULL), NULL));
+		//subq	$48, %rsp
+		sprintf(assem_string, "sub `d0, $%d\n", 48);
+		emit(AS_Oper(String(assem_string), Temp_TempList(F_SP(), NULL), NULL, NULL));
+
 	}
+	Temp_temp rv;
+	Temp_temp t;
+	for (; sList; sList = sList->tail) {
+		t = munchStm(sList->head);
+		if (t != F_VOID()) {
+			rv = t;
+		}
+	}
+	if (rv != NULL && rv != F_RV()) {
+		sprintf(assem_string, "mov `d0, `s0\n");
+		emit(AS_Oper(String(assem_string), Temp_TempList(F_RV(), NULL), Temp_TempList(rv, NULL), NULL));
+	}
+	//add ret;
+
 	asList = instrList;
 	instrList = last = NULL;
 	return asList;
