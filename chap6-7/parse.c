@@ -12,6 +12,7 @@
 #include "semant.h"
 #include "assem.h"
 #include "codegen.h"
+#include "lowbVM.h"
 #include "printtree.h"
 extern int yyparse(void);
 extern A_exp absyn_root;
@@ -72,9 +73,9 @@ int main() {
 	//parse("array.tig");
 	//parse("for.tig");
 	//parse("let.tig");
-	parse("fun.tig");
+	//parse("fun.tig");
 	//parse("2.tig");
-
+	testVM();
 	//parse("inner.tig");
 	//parse("queens.tig");
 	//parse("queens.tig");

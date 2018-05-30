@@ -4,9 +4,10 @@
 #include "symbol.h"
 #include "table.h"
 #include "frame.h"
+#include <memory.h>
 static  int text[1000];
 static int i = 0;
-static int *stk;
+static char *stk;
 typedef
 enum {
 	MOVCONST2REG,
@@ -21,6 +22,7 @@ enum {
 	JMP,
 	LABEL,
 	CALL,
+	EXIT,
 } INS;
 
 
@@ -42,6 +44,13 @@ S_table labelTable() {
 //	int i;
 //};
 //typedef struct Reg* Regptr;
+void init_reg();
+void init_vm() {
+	memset(text, 0, sizeof(text));
+	stk = malloc(4000);
+	memset(stk, 0, 4000);
+	init_reg();
+}
 typedef
 enum {
 	_i,
@@ -52,9 +61,9 @@ struct Val {
 	//int i;
 	int i;
 };
-typedef struct Val* ValPtr;
-ValPtr VAL(kind k) {
-	ValPtr r = checked_malloc(sizeof(*r));
+typedef struct Val* varptr;
+varptr VAL(kind k) {
+	varptr r = checked_malloc(sizeof(*r));
 	r->type = k;
 	return r;
 }
@@ -71,16 +80,16 @@ ValPtr VAL(kind k) {
 //	Regptr r = checked_malloc(sizeof(*r));
 //	return r;
 //}
-void R_enter(S_table t, Temp_temp reg, ValPtr value) {
+void R_enter(S_table t, Temp_temp reg, varptr value) {
 	TAB_enter(t, reg, value);
 }
-void lable_enter(S_table t, string s, ValPtr value) {
+void lable_enter(S_table t, string s, varptr value) {
 	TAB_enter(t, s, value);
 }
-ValPtr label_look(S_table t, string s) {
+varptr label_look(S_table t, string s) {
 	return TAB_look(t, s);
 }
-ValPtr R_look(S_table t, Temp_temp reg) {
+varptr R_look(S_table t, Temp_temp reg) {
 	return TAB_look(t, reg);
 }
 //LABEL
@@ -90,9 +99,15 @@ void addLabel(string s) {
 	text[i] = LABEL;
 	i++;
 	text[i] = (int)s;
-	ValPtr v = VAL(_i);
+	varptr v = VAL(_i);
 	v->i = i;
 	lable_enter(labelTable(), s, v);
+	i++;
+}
+void addCall(string s) {
+	text[i] = CALL;
+	i++;
+	text[i] = (int)s;
 	i++;
 }
 void addJump(string s) {
@@ -108,125 +123,141 @@ void add(INS ins) {
 }
 void addReg(Temp_temp reg) {
 	//S_enter(S_table t, S_symbol sym, void *value);
-	ValPtr r = R_look(regTable(), reg);
+	varptr r = R_look(regTable(), reg);
 	if (r == NULL ){
-		ValPtr r = VAL(_r);
-		r->i = -1;
+		r = VAL(_r);
+		r->i = -111;
 		R_enter(regTable(), reg, r);
 	}
 	text[i] = (int)r;
 	i++;
 }
 void addConst(int intt) {
-	text[i] = intt;
+	varptr in = VAL(_i);
+	in->i = intt;
+	text[i] = in;
 	i++;
 }
-void init() {
-	ValPtr fp = VAL(_r);
+void init_reg() {
+	varptr fp = VAL(_r);
 	R_enter(regTable(), F_FP(), fp);
 	fp->i = 4000;
-	ValPtr sp = VAL(_r);
+	printf("ebp: %x\n", fp);
+
+	varptr sp = VAL(_r);
 	sp->i = 4000;
+	printf("esp: %x\n", sp);
 	R_enter(regTable(), F_SP(), sp);
 }
-void vm() {
+void show(Temp_temp reg) {
+	printf("result %d", R_look(regTable(), reg)->i);
+}
+void sheax() {
+	Temp_temp eax = F_RV();
+	show(eax);
+}
+void vm(string beg) {
 	int pc = 0;
-	ValPtr i = label_look(labelTable(), String("l7"));
-	pc = i->i;
-	while (text[pc] != RET) {
+	varptr start = label_look(labelTable(), beg);
+	pc = start->i;
+	while (pc<i) {
 		pc += 1;
 		INS ins = text[pc];
 		pc += 1;
 		switch (ins) {
 		case MOVCONST2REG: {
-			ValPtr res = text[pc];
+			varptr res = text[pc];
 			pc++;
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			res->i = lhs->i;
 			break;
 		}
 		case MOVREG2REG: {
-			ValPtr res = text[pc];
+			varptr res = text[pc];
 			pc++;
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			res->i = lhs->i;
 			break;
 
 		}
 		case MOVREG2MEM: {
 			//mov[ebp + -4], r102
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			pc++;
-			int offset = text[pc];
-			ValPtr rhs = text[pc];
+			varptr offset = text[pc];
 			pc++;
-			stk[lhs->i + offset] = rhs->i;
+			varptr rhs = text[pc];
+			*(int *)(stk + lhs->i + offset->i) = rhs->i;
 			break;
 		}
 		case MOVMEM2REG: {
 			//mov     r106, [ebp + -4]
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			pc++;
-			ValPtr rhs = text[pc];
+			varptr rhs = text[pc];
 			pc++;
-			int offset = text[pc];
-			lhs->i = stk[rhs->i + offset];
+			varptr offset = text[pc];
+			lhs->i = *(int *)(stk + rhs->i + offset->i);
 			break;
 
 		}
 		case SUB: {
 			//add eax, r117 + 1
-			ValPtr res = text[pc];
+			varptr res = text[pc];
 			assert(res->type != _i);
 			pc++;
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			pc++;
-			ValPtr rhs = text[pc];
+			varptr rhs = text[pc];
 			//if (rhs->type = _i){}
 			res->i = lhs->i - rhs->i;
 			break;
 		}
 		case PUSH: {
-			ValPtr  res = text[pc];
-			ValPtr sp = R_look(regTable(), F_SP());
-			sp->i--;
-			stk[sp->i] = res->i;
+			varptr  res = text[pc];
+			varptr sp = R_look(regTable(), F_SP());
+			sp->i-=4;
+			*(int *)(stk + sp->i)= res->i;
 			break;
 
 		}
 		case ADD: {
-			ValPtr res = text[pc];
+			varptr res = text[pc];
 			assert(res->type != _i);
 			pc++;
-			ValPtr lhs = text[pc];
+			varptr lhs = text[pc];
 			pc++;
-			ValPtr rhs = text[pc];
+			varptr rhs = text[pc];
 			res->i = lhs->i + rhs->i;
 			break;
 
 		}
 		case CALL: {
-			ValPtr sp = R_look(regTable(), F_SP());
+			varptr sp = R_look(regTable(), F_SP());
 			string label = text[pc];
 
-			sp->i--;
-			stk[sp->i] = pc;
-			pc = label_look(labelTable(), label);
+			sp->i-=4;
+			*(int *)(stk + sp->i) = pc;
+			pc = label_look(labelTable(), label)->i;
 			break;
 		}
 		case POP:{
 			break;
 
 		}
+		case EXIT: {
+			return;
+		}
 		case RET:{
 			//--sp;
 			//old ebp <-- old esp <-- ebp
 			//
-			ValPtr fp = R_look(regTable(), F_FP());
-			ValPtr sp = R_look(regTable(), F_SP());
+			//sheax();
+			varptr fp = R_look(regTable(), F_FP());
+			varptr sp = R_look(regTable(), F_SP());
 			sp->i = fp->i;
-			int oldfp = stk[fp->i];
-			pc = stk[fp->i + 1];
+			int oldfp = *(int *)(stk + fp->i);
+			pc = *(int *)(stk+fp->i + 4);
 			fp->i = oldfp;
 			//pc returnPc
 			break;
@@ -234,8 +265,8 @@ void vm() {
 		}
 		case JMP:{
 			string label = text[pc];
-			ValPtr i = label_look(labelTable(), label);
-			pc = i->i;
+			varptr offset = label_look(labelTable(), label);
+			pc = offset->i;
 			break;
 
 		}
@@ -246,4 +277,68 @@ void vm() {
 		}
 		}
 	}
+}
+
+void testVM() {
+	init_vm();
+	Temp_temp r102 = Temp_newtemp();
+	Temp_temp r103 = Temp_newtemp();
+	Temp_temp r104 = Temp_newtemp();
+	Temp_temp r105 = Temp_newtemp();
+	Temp_temp r106 = Temp_newtemp();
+	Temp_temp r114 = Temp_newtemp();
+	Temp_temp ebp = F_FP();
+	Temp_temp esp = F_SP();
+	Temp_temp eax = F_RV();
+	string beg = String("L7");
+	string L5 = String("L5");
+	string L8 = String("L8");
+	string L9 = String("L9");
+	addLabel(beg);
+	add(SUB);
+	addReg(esp);
+	addReg(esp);
+	addConst(48);
+	add(MOVCONST2REG);
+	addReg(r102);
+	addConst(100);
+	add(MOVREG2MEM);
+	addReg(ebp);
+	addConst(-4);
+	addReg(r102);
+	add(MOVMEM2REG);
+	addReg(r104);
+	addReg(ebp);
+	addConst(-4);
+	add(PUSH);
+	addReg(r104);
+	add(PUSH);
+	addReg(ebp);
+	addCall(L5);
+	add(EXIT);
+	addLabel(L5);
+	addLabel(L9);
+	add(PUSH);
+	addReg(ebp);
+	add(MOVREG2REG);
+	addReg(ebp);
+	addReg(esp);
+	add(SUB);
+	addReg(esp);
+	addReg(esp);
+	addConst(-48);
+	add(MOVMEM2REG);
+	addReg(r114);
+	addReg(ebp);
+	addConst(12);
+	addJump(L8);
+	addLabel(L8);
+	add(MOVREG2REG);
+	addReg(eax);
+	addReg(r114);
+	add(RET);
+	vm(beg);
+	show(eax);
+	//add
+	//add(push)
 }
