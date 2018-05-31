@@ -121,64 +121,123 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Tr_exp done) {
 Tr_exp Tr_assign(Tr_exp lhs, Tr_exp rhs) {
 	return Tr_Nx(T_Move(unEx(lhs), unEx(rhs)));
 }
-Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee) {
+static Tr_exp Tr_ifExpNoElse(Tr_exp test, Tr_exp then)
+{
+	Temp_label t = Temp_newlabel(), f = Temp_newlabel();
+	struct Cx cond = unCx(test);
 	Tr_exp result = NULL;
-	Temp_temp r = Temp_newtemp();
-	Temp_label t = Temp_newlabel();
-	Temp_label f = Temp_newlabel();
-	struct Cx condition =  unCx(test);
-	do_Patch(condition.trues, t);
-	do_Patch(condition.falses, f);
-	//to do fast
-	if (elsee == NULL) {
-		if (then->kind == Tr_cx) {
-			Cxinit(then->u.cx, f, f);
-			return Tr_Nx(T_Seq(condition.stm,
-				T_Seq(T_Label(t),
-					T_Seq(then->u.cx.stm, T_Label(f)
-					)
-				)
-			));
-		}
-		else {
-			return Tr_Nx(T_Seq(condition.stm,
-							T_Seq(T_Label(t),
-								T_Seq(T_Exp(unEx(then)), T_Label(f)
-								)
-							)
-						));
-		}
+	do_Patch(cond.trues, t);
+	do_Patch(cond.falses, f);
+	if (then->kind == Tr_nx) {
+		result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t),
+			T_Seq(then->u.nx, T_Label(f)))));
+	}
+	else if (then->kind == Tr_cx) {
+		Cxinit(then->u.cx, f, f);
+		result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t),
+			T_Seq(then->u.cx.stm, T_Label(f)))));
 	}
 	else {
-		Temp_label join = Temp_newlabel();
-		T_stm joinJump = T_Jump(T_Name(join), Temp_LabelList(join, NULL));
-		//return Tr_Nx(condition.stm);
-		return Tr_Nx(T_Seq(condition.stm,
-			T_Seq(T_Label(t),
-			T_Seq(T_Exp(unEx(then)), 
-			T_Seq(joinJump,
-			T_Seq(T_Label(f),
-			T_Seq(T_Exp(unEx(elsee)),
-			T_Label(join)
-					)))))));
-
-		/*if (then->kind == Tr_cx && elsee->kind == Tr_cx) {
-			Temp_label z = Temp_newlabel();
-			Cxinit(then->u.cx, z, z);
-			Cxinit(elsee->u.cx, z, z);
-			return Tr_Nx(T_Eseq(condition.stm,
-				T_Eseq(T_Label(t),
-					T_Eseq(then->u.cx.stm,
-						T_Eseq(T_Label(f),
-							T_Eseq(elsee->u.cx.stm,
-								T_Label(z)
-							)
-						)
-					)
-				)));
-		}*/
+		result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t),
+			T_Seq(T_Exp(unEx(then)), T_Label(f)))));
 	}
+	return result;
 }
+
+static Tr_exp Tr_ifExpWithElse(Tr_exp test, Tr_exp then, Tr_exp elsee)
+{
+	Temp_label t = Temp_newlabel(), f = Temp_newlabel(), join = Temp_newlabel();
+	Temp_temp r = Temp_newtemp();
+	Tr_exp result = NULL;
+	T_stm joinJump = T_Jump(T_Name(join), Temp_LabelList(join, NULL));
+	struct Cx cond = unCx(test);
+	do_Patch(cond.trues, t);
+	do_Patch(cond.falses, f);
+	if (elsee->kind == Tr_ex) {
+		result = Tr_Ex(T_Eseq(cond.stm, T_Eseq(T_Label(t),
+			T_Eseq(T_Move(T_Temp(r), unEx(then)),
+				T_Eseq(joinJump, T_Eseq(T_Label(f),
+					T_Eseq(T_Move(T_Temp(r), unEx(elsee)),
+						T_Eseq(joinJump,
+							T_Eseq(T_Label(join), T_Temp(r))))))))));
+		printf("fffffffffffffffffffffffffffffff");
+	}
+	else {
+		T_stm thenStm;
+		if (then->kind == Tr_ex) thenStm = T_Exp(then->u.ex);
+		else thenStm = (then->kind == Tr_nx) ? then->u.nx : then->u.cx.stm;
+
+		T_stm elseeStm = (elsee->kind == Tr_nx) ? elsee->u.nx : elsee->u.cx.stm;
+		result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t), T_Seq(thenStm,
+			T_Seq(joinJump, T_Seq(T_Label(f),
+				T_Seq(elseeStm, T_Seq(joinJump, T_Label(join)))))))));
+	}
+	return result;
+}
+
+Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee)
+{
+	if (elsee) return Tr_ifExpWithElse(test, then, elsee);
+	else return Tr_ifExpNoElse(test, then);
+}
+//Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee) {
+//	Tr_exp result = NULL;
+//	Temp_temp r = Temp_newtemp();
+//	Temp_label t = Temp_newlabel();
+//	Temp_label f = Temp_newlabel();
+//	struct Cx condition =  unCx(test);
+//	do_Patch(condition.trues, t);
+//	do_Patch(condition.falses, f);
+//	//to do fast
+//	if (elsee == NULL) {
+//		if (then->kind == Tr_cx) {
+//			Cxinit(then->u.cx, f, f);
+//			return Tr_Nx(T_Seq(condition.stm,
+//				T_Seq(T_Label(t),
+//					T_Seq(then->u.cx.stm, T_Label(f)
+//					)
+//				)
+//			));
+//		}
+//		else {
+//			return Tr_Nx(T_Seq(condition.stm,
+//							T_Seq(T_Label(t),
+//								T_Seq(T_Exp(unEx(then)), T_Label(f)
+//								)
+//							)
+//						));
+//		}
+//	}
+//	else {
+//		Temp_label join = Temp_newlabel();
+//		T_stm joinJump = T_Jump(T_Name(join), Temp_LabelList(join, NULL));
+//		//return Tr_Nx(condition.stm);
+//		return Tr_Nx(T_Seq(condition.stm,
+//			T_Seq(T_Label(t),
+//			T_Seq(T_Exp(unEx(then)), 
+//			T_Seq(joinJump,
+//			T_Seq(T_Label(f),
+//			T_Seq(T_Exp(unEx(elsee)),
+//			T_Label(join)
+//					)))))));
+//
+//		/*if (then->kind == Tr_cx && elsee->kind == Tr_cx) {
+//			Temp_label z = Temp_newlabel();
+//			Cxinit(then->u.cx, z, z);
+//			Cxinit(elsee->u.cx, z, z);
+//			return Tr_Nx(T_Eseq(condition.stm,
+//				T_Eseq(T_Label(t),
+//					T_Eseq(then->u.cx.stm,
+//						T_Eseq(T_Label(f),
+//							T_Eseq(elsee->u.cx.stm,
+//								T_Label(z)
+//							)
+//						)
+//					)
+//				)));
+//		}*/
+//	}
+//}
 Tr_exp Tr_subscriptVar(Tr_exp arr, Tr_exp i) {
 	T_exp offset = T_Binop(T_mul, unEx(i), T_Const(FRAME_WORD_SIZE));
 	return Tr_Ex(T_Mem(T_Binop(T_plus, unEx(arr), offset)));

@@ -46,6 +46,9 @@ F_access F_allocLocal(F_frame f, bool escape) {
 	}
 }
 
+int stack_size(F_frame f) {
+	return FRAME_WORD_SIZE*f->local_count;
+}
 F_accessList F_AccessList(F_access head,F_accessList tail) {
 	F_accessList acl = checked_malloc(sizeof(*acl));
 	acl->head = head;

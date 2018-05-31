@@ -157,7 +157,7 @@ static Temp_temp munchExp(T_exp e) {
 			sprintf(assem_string, "call	`s0\n");
 
 			emit(AS_Oper(String(assem_string), F_caller_saves(), Temp_TempList(r, list), NULL));
-			return F_VOID();
+			return F_RV();
 		}
 
 	default:
@@ -222,7 +222,11 @@ static Temp_temp munchStm(T_stm stm) {
 			Temp_temp s0 = munchExp(src);
 			Temp_temp d0 = munchExp(dst);
 			sprintf(assem_string, "mov `d0, `s0\n");
+			if (d0->num == 101) {
+				printf("101");
+			}
 			emit(AS_Move(String(assem_string), Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
+			return d0;
 		}
 		else if (dst->kind == T_MEM) {
 			if (dst->u.MEM->kind == T_BINOP &&
@@ -284,26 +288,26 @@ static Temp_temp munchStm(T_stm stm) {
 	return NULL;
 }
 
-AS_instrList F_codegen(F_frame frame, T_stmList stmList, int i) {
+AS_instrList F_codegen(F_frame frame, T_stmList stmList, int main) {
 	AS_instrList asList = NULL;
 	T_stmList sList = stmList;
 	codegenFrame = frame;
 	int first = 1;
 	char assem_string[100];
-	if (i) {
-		assert(sList->head != NULL);
-		munchStm(sList->head);
-		sList = sList->tail;
-		sprintf(assem_string, "push `s0\n");
-		emit(AS_Oper(String(assem_string), NULL, Temp_TempList(F_FP(), NULL), NULL));
-		sprintf(assem_string, "mov `d0, `s0\n");
-		emit(AS_Oper(String(assem_string), Temp_TempList(F_FP(), NULL), Temp_TempList(F_SP(), NULL), NULL));
-		//subq	$48, %rsp
-		sprintf(assem_string, "sub `d0, $%d\n", 48);
+	assert(sList->head != NULL);
+	munchStm(sList->head);
+	sList = sList->tail;
+	sprintf(assem_string, "push `s0\n");
+	emit(AS_Oper(String(assem_string), NULL, Temp_TempList(F_FP(), NULL), NULL));
+	sprintf(assem_string, "mov `d0, `s0\n");
+	emit(AS_Oper(String(assem_string), Temp_TempList(F_FP(), NULL), Temp_TempList(F_SP(), NULL), NULL));
+	int stk_size = stack_size(frame);
+	if (stk_size) {
+		sprintf(assem_string, "sub `d0, $%d\n", stk_size);
 		emit(AS_Oper(String(assem_string), Temp_TempList(F_SP(), NULL), NULL, NULL));
-
 	}
-	Temp_temp rv;
+	//subq	$48, %rsp
+	Temp_temp rv = F_RV();
 	Temp_temp t;
 	for (; sList; sList = sList->tail) {
 		t = munchStm(sList->head);
@@ -315,6 +319,8 @@ AS_instrList F_codegen(F_frame frame, T_stmList stmList, int i) {
 		sprintf(assem_string, "mov `d0, `s0\n");
 		emit(AS_Oper(String(assem_string), Temp_TempList(F_RV(), NULL), Temp_TempList(rv, NULL), NULL));
 	}
+	sprintf(assem_string, "ret\n");
+	emit(AS_Oper(String(assem_string),  NULL, NULL, NULL));
 	//add ret;
 
 	asList = instrList;

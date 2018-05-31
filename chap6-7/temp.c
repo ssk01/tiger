@@ -13,7 +13,7 @@
 #include "temp.h"
 #include "table.h"
 
-struct Temp_temp_ { int num; };
+//struct Temp_temp_ { int num; };
 
 string Temp_labelstring(Temp_label s)
 {

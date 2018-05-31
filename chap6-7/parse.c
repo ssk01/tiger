@@ -24,12 +24,14 @@ static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 {
 	T_stmList stmList;
 	AS_instrList iList;
+	pr_stm(stdout, body, 4);
+
 	stmList = C_linearize(body);
 	stmList = C_traceSchedule(C_basicBlocks(stmList));
 	printf("___________________________________\n");
 	printStmList(stdout, stmList);
-	printf("___________________________________\n");
 	iList = F_codegen(frame, stmList, i); /* 9 */
+	printf("___________________________________\n");
 
 	fprintf(out, "BEGIN %s\n", Temp_labelstring(F_name(frame)));
 	AS_printInstrList(out, iList,
@@ -69,13 +71,14 @@ int main() {
 	//parse("record.tig");
 	//parse("6.tig");
 	//parse("fac1.tig");
+	parse("fac.tig");
 	//parse("string.tig");
 	//parse("array.tig");
 	//parse("for.tig");
 	//parse("let.tig");
 	//parse("fun.tig");
 	//parse("2.tig");
-	testVM();
+	//testVM();
 	//parse("inner.tig");
 	//parse("queens.tig");
 	//parse("queens.tig");

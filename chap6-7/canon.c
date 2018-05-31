@@ -25,7 +25,9 @@ static expRefList ExpRefList(T_exp *head, expRefList tail)
 }
 
 static bool isNop(T_stm x) 
-{  return x->kind == T_EXP && x->u.EXP->kind == T_CONST;
+{
+	return x->kind == T_EXP && x->u.EXP->kind == T_CONST;
+	//&&x->u.EXP->u.CONST ==0;
  }
 
 static T_stm seq(T_stm x, T_stm y)
