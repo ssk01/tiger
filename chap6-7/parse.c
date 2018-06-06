@@ -29,14 +29,16 @@ static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 	stmList = C_linearize(body);
 	stmList = C_traceSchedule(C_basicBlocks(stmList));
 	printf("___________________________________\n");
-	printStmList(stdout, stmList);
+	//printStmList(stdout, stmList);
 	iList = F_codegen(frame, stmList, i); /* 9 */
 	printf("___________________________________\n");
-
+	//out = fopen("fac_1.txt", "a+");
+	out = fopen("fac_iter.txt", "a+");
 	fprintf(out, "BEGIN %s\n", Temp_labelstring(F_name(frame)));
 	AS_printInstrList(out, iList,
 		Temp_layerMap(F_tempMap, Temp_name()));
 	fprintf(out, "END %s\n\n", Temp_labelstring(F_name(frame)));
+	////fprintf(out, "______________ \n\n");
 }
 A_exp parse(string fname)
 {
@@ -70,8 +72,10 @@ int main() {
 	//parse("print.tig");
 	//parse("record.tig");
 	//parse("6.tig");
-	//parse("fac1.tig");
-	parse("fac.tig");
+	//parse("while.test");
+	//parse("while.test");
+	parse("fac_iter.tig");
+	//parse("fac.tig");
 	//parse("string.tig");
 	//parse("array.tig");
 	//parse("for.tig");

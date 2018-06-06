@@ -24,13 +24,8 @@ static Temp_tempList munchArgs(unsigned int n, T_expList elist) {
 	Temp_tempList tlist = munchArgs(n + 1, elist->tail);
 	Temp_temp e = munchExp(elist->head);
 	//这个和frame里面分配参数情况不一样，而且reg_count数量还需要考虑。
-	//if (F_escape(formals->head)) {
-		sprintf(assem_string, "push `s0\n");
-		emit(AS_Oper(String(assem_string), NULL, Temp_TempList(e, NULL), NULL));
-	/*else {
-		sprintf(assem_string, "move %s, `s0\n", register_names[reg_count++]);
-		emit(AS_Move(String(assem_string), NULL, Temp_TempList(e, NULL)));
-	}*/
+	sprintf(assem_string, "push `s0\n");
+	emit(AS_Oper(String(assem_string), NULL, Temp_TempList(e, NULL), NULL));
 	return Temp_TempList(e, tlist);
 }
 static Temp_temp munchExp(T_exp e) {
@@ -235,7 +230,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.left);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.right->u.CONST;
-				sprintf(assem_string, "mov [`s0 + %d], `s1\n", n);
+				sprintf(assem_string, "mov [`s0+%d], `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_BINOP &&
@@ -244,7 +239,7 @@ static Temp_temp munchStm(T_stm stm) {
 				Temp_temp s0 = munchExp(dst->u.MEM->u.BINOP.right);
 				Temp_temp s1 = munchExp(src);
 				int n = dst->u.MEM->u.BINOP.left->u.CONST;
-				sprintf(assem_string, "mov [`s0 + %d], `s1\n", n);
+				sprintf(assem_string, "mov [`s0+%d], `s1\n", n);
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 			else if (dst->u.MEM->kind == T_CONST) {
@@ -295,15 +290,21 @@ AS_instrList F_codegen(F_frame frame, T_stmList stmList, int main) {
 	int first = 1;
 	char assem_string[100];
 	assert(sList->head != NULL);
-	munchStm(sList->head);
-	sList = sList->tail;
+	//munchStm(sList->head);
+	//sList = sList->tail;
+	if (main == 0) {
+		sprintf(assem_string, "push -1 #fake address for fuck static link\n");
+		emit(AS_Oper(String(assem_string), NULL, NULL, NULL));
+		sprintf(assem_string, "push -1 #fake address for end\n");
+		emit(AS_Oper(String(assem_string), NULL,  NULL, NULL));
+	}
 	sprintf(assem_string, "push `s0\n");
 	emit(AS_Oper(String(assem_string), NULL, Temp_TempList(F_FP(), NULL), NULL));
 	sprintf(assem_string, "mov `d0, `s0\n");
 	emit(AS_Oper(String(assem_string), Temp_TempList(F_FP(), NULL), Temp_TempList(F_SP(), NULL), NULL));
 	int stk_size = stack_size(frame);
 	if (stk_size) {
-		sprintf(assem_string, "sub `d0, $%d\n", stk_size);
+		sprintf(assem_string, "sub `d0, %d\n", stk_size);
 		emit(AS_Oper(String(assem_string), Temp_TempList(F_SP(), NULL), NULL, NULL));
 	}
 	//subq	$48, %rsp

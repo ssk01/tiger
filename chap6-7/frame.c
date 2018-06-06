@@ -110,6 +110,11 @@ static F_accessList makeFormalAccessList(F_frame f, U_boolList formals) {
 	F_accessList acl = NULL;
 	F_access ac = NULL;
 	int i = 0;
+	F_accessList tail;
+	ac = InFrame((2 + i)*FRAME_WORD_SIZE);
+	acl = tail = F_AccessList(ac, NULL);
+	formals = formals->tail;
+	i++;
 	for (; formals; formals = formals->tail) {
 
 	/*	if (!formals->head && i < 6) {
@@ -118,9 +123,12 @@ static F_accessList makeFormalAccessList(F_frame f, U_boolList formals) {
 		else {*/
 			ac = InFrame((2+i)*FRAME_WORD_SIZE);
 		//}
-		acl = F_AccessList(ac, acl);
+			tail->tail = F_AccessList(ac, NULL);
+			tail = tail->tail;
+		//acl = F_AccessList(ac, acl);
 		i++;
 	}
+	
 	return acl;
 }
 static F_access InFrame(int offset1) {

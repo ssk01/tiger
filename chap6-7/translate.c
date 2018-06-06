@@ -47,15 +47,27 @@ Tr_access Tr_allocLocal(Tr_level l, bool escape) {
 	printf("Tr_allocLocal\n");
 	return newTr_access(l, F_allocLocal(l->frame, escape));
 }
+Tr_accessList _make(Tr_level l, F_accessList ac) {
+	if (ac == NULL) {
+		return NULL;
+	}
+	Tr_access tr = newTr_access(l, ac->head);
+	return Tr_AccessList(tr, _make(l, ac->tail));
 
+}
 Tr_accessList makeFormalAccessList(Tr_level l) {
+	Tr_accessList trTail = NULL;
 	Tr_accessList trl = NULL;
 	Tr_access tr = NULL;
 	F_accessList acl = F_formals(l->frame)->tail;
-	for (; acl; acl = acl->tail) {
-		tr = newTr_access(l, acl->head);
-		trl = Tr_AccessList(tr, trl);
-	}
+	return _make(l, acl);
+	//for (; acl; acl = acl->tail) {
+	//	tr = newTr_access(l, acl->head);
+	//	//trl = Tr_AccessList(tr, trl);
+	//	trl = Tr_AccessList(tr, NULL);
+	//	trl->tail = trTail;
+	//	trTail = trl;
+	//}
 	return trl;
 }
 Tr_level Tr_newLevel(Tr_level p, Temp_label n, U_boolList f)
@@ -515,10 +527,10 @@ static T_exp unEx(Tr_exp e) {
 		Temp_label f = Temp_newlabel();
 		do_Patch(e->u.cx.falses, f);
 		do_Patch(e->u.cx.trues, t);
-		return T_Eseq(T_Move(T_Temp(r), T_Const(0)), 
+		return T_Eseq(T_Move(T_Temp(r), T_Const(1)), 
 			T_Eseq(e->u.cx.stm, 
 				T_Eseq(T_Label(f),
-					T_Eseq(T_Move(T_Temp(r), T_Const(1)),
+					T_Eseq(T_Move(T_Temp(r), T_Const(0)),
 						T_Eseq(T_Label(t), T_Temp(r))
 					)
 				)
