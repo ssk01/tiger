@@ -33,7 +33,7 @@ static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 	iList = F_codegen(frame, stmList, i); /* 9 */
 	printf("___________________________________\n");
 	//out = fopen("fac_1.txt", "a+");
-	out = fopen("fac_iter.txt", "a+");
+	//out = stdout;
 	fprintf(out, "BEGIN %s\n", Temp_labelstring(F_name(frame)));
 	AS_printInstrList(out, iList,
 		Temp_layerMap(F_tempMap, Temp_name()));
@@ -47,6 +47,8 @@ A_exp parse(string fname)
 	  //return absyn_root;
 	{
 		FILE * out = stdout;
+		//out = fopen("ssktest/test3.txt", "a+");
+
 		//pr_exp(out, absyn_root, 4);
 		printf("\n_________________________________________\n");
 		F_fragList frags = SEM_transProg(absyn_root);
@@ -55,13 +57,15 @@ A_exp parse(string fname)
 		/* convert the filename */
 		/* Chapter 8, 9, 10, 11 & 12 */
 		int i = 0;
+		fprintf(out, "string: \n\n");
 		for (; frags; frags = frags->tail)
 			if (frags->head->kind == F_procFrag) {
-				printf("proc:%s, %s\n", frags->head->u.proc.name, S_name(F_name(frags->head->u.proc.frame)));
+				fprintf(out ,"proc:     %s, %s\n\n", frags->head->u.proc.name, S_name(F_name(frags->head->u.proc.frame)));
 		    doProc(out, frags->head->u.proc.frame, frags->head->u.proc.body, i++);
 			}
-		    else if (frags->head->kind == F_stringFrag) 
-		    fprintf(out, "%s\n", frags->head->u.stringg.str);
+			else if (frags->head->kind == F_stringFrag) {
+				fprintf(out, "%s: %s\n", S_name(frags->head->u.stringg.label),frags->head->u.stringg.str);
+			}
 		//fclose(out);
 		printf("\n_________________________________________\n");
 
@@ -74,7 +78,7 @@ int main() {
 	//parse("6.tig");
 	//parse("while.test");
 	//parse("while.test");
-	parse("fac_iter.tig");
+	parse("ssktest/test5.tig");
 	//parse("fac.tig");
 	//parse("string.tig");
 	//parse("array.tig");

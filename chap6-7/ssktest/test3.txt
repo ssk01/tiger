@@ -1,0 +1,52 @@
+string: 
+
+L2: Somebody
+L1: Nobody
+proc:       letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 4
+L4:
+add eax,ebp+-4
+mov r102, eax
+mov	r107,8
+push r107
+call	malloc
+mov r100, eax
+mov [r100+0], L1
+mov	r115,1000
+mov [r100+4], r115
+mov [r102], r100
+mov	r116,[ebp+-4]
+mov	r117,4
+mul eax,r117*0
+add eax,r116+eax
+mov [eax], L2
+mov	r121,[ebp+-4]
+mov	r122,4
+mul eax,r122*0
+add eax,r121+eax
+mov	r120,[eax]
+push r120
+mov	r123,[ebp+8]
+push r123
+call	print
+mov	r126,[ebp+-4]
+mov	r127,4
+mul eax,r127*1
+add eax,r126+eax
+mov	r125,[eax]
+push r125
+mov	r128,[ebp+8]
+push r128
+call	printInt
+jmp	L3
+L3:
+ret
+
+END L0
+

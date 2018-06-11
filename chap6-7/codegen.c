@@ -10,7 +10,7 @@ F_frame codegenFrame = NULL;
 static Temp_temp munchExp(T_exp e);
 static void emit(AS_instr instr)
 {
-	printf("fuck");
+	//printf("fuck");
 	if (!instrList) instrList = last = AS_InstrList(instr, NULL);
 	else last = last->tail = AS_InstrList(instr, NULL);
 }
@@ -97,7 +97,13 @@ static Temp_temp munchExp(T_exp e) {
 					emit(AS_Move(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL)));
 					return r;
 				}
-				assert(0);
+				else {
+					Temp_temp s0 = munchExp(mem);
+					sprintf(assem_string, "mov	`d0,[`s0]\n");
+					emit(AS_Move(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL)));
+					return r;
+				}
+				//assert(0);
 			}
 			else if (mem->kind == T_CONST) {
 				Temp_temp r = Temp_newtemp();
@@ -214,8 +220,8 @@ static Temp_temp munchStm(T_stm stm) {
 		T_exp dst = stm->u.MOVE.dst;
 		T_exp src = stm->u.MOVE.src;
 		if (dst->kind == T_TEMP) {
-			Temp_temp s0 = munchExp(src);
 			Temp_temp d0 = munchExp(dst);
+			Temp_temp s0 = munchExp(src);
 			sprintf(assem_string, "mov `d0, `s0\n");
 			if (d0->num == 101) {
 				printf("101");
@@ -259,7 +265,7 @@ static Temp_temp munchStm(T_stm stm) {
 			else {
 				Temp_temp s0 = munchExp(dst->u.MEM);
 				Temp_temp s1 = munchExp(src);
-				sprintf(assem_string, "mov [s0], `s1\n");
+				sprintf(assem_string, "mov [`s0], `s1\n");
 				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
 			}
 

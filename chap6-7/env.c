@@ -32,7 +32,7 @@ S_table E_base_venv(void) {
 	Ty_tyList formalTys = NULL;
 	formalTys = Ty_TyList(Ty_String(), NULL);
 	S_enter(t, S_Symbol(String("print")), E_FunEntry(Tr_outermost(), Temp_namedlabel(String("print")), formalTys, Ty_Void(), "print"));
-	S_enter(t, S_Symbol(String("printInt")), E_FunEntry(Tr_outermost(), Temp_namedlabel(String("print")), Ty_TyList(Ty_Int(), NULL), Ty_Void(), "printInt"));
+	S_enter(t, S_Symbol(String("printInt")), E_FunEntry(Tr_outermost(), Temp_namedlabel(String("printInt")), Ty_TyList(Ty_Int(), NULL), Ty_Void(), "printInt"));
 	S_enter(t, S_Symbol(String("getchar")), E_FunEntry(Tr_outermost(), Temp_namedlabel(String("getchar")), NULL, Ty_String(), "getchar"));
 	S_enter(t, S_Symbol(String("ord")), E_FunEntry(Tr_outermost(), Temp_namedlabel(String("ord")), formalTys, Ty_Int(), "ord"));
 	formalTys = Ty_TyList(Ty_Int(), NULL);
