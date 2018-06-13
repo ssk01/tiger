@@ -1,0 +1,7 @@
+/* valid for and let */
+
+let
+	var a:= 4
+in 
+	while a do(a:=a-1; printInt(a))
+end

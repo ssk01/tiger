@@ -92,6 +92,14 @@ void parseProc(Vm &v, vector<string>& insLine) {
 		auto label = insLine[1];
 		v.addJMP(label);
 	}
+	else if (insLine[0] == "jle") {
+		auto label = insLine[1];
+		v.addJLE(label);
+	}
+	else if (insLine[0] == "jl") {
+		auto label = insLine[1];
+		v.addJL(label);
+	}
 	else if (insLine[0] == "call") {
 		v.addCALL(insLine[1]);
 	}
@@ -120,7 +128,7 @@ void parseProc(Vm &v, vector<string>& insLine) {
 		//break;
 	}
 	else {
-		cout << "ass " << insLine[0] << endl;
+		cout << "MISS INS " << insLine[0] << endl;
 		assert(0);
 	}
 }

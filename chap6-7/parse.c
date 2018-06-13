@@ -40,14 +40,14 @@ static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 	fprintf(out, "END %s\n\n", Temp_labelstring(F_name(frame)));
 	////fprintf(out, "______________ \n\n");
 }
-A_exp parse(string fname)
+A_exp parse(string fname, string path)
 {
 	EM_reset(fname);
 	if (yyparse() == 0) /* parsing worked */
 	  //return absyn_root;
 	{
 		FILE * out = stdout;
-		//out = fopen("ssktest/test3.txt", "a+");
+		out = fopen(path, "w+");
 
 		//pr_exp(out, absyn_root, 4);
 		printf("\n_________________________________________\n");
@@ -75,10 +75,11 @@ A_exp parse(string fname)
 int main() {
 	//parse("print.tig");
 	//parse("record.tig");
-	//parse("6.tig");
+	//parse("ssktest/while.tig");
 	//parse("while.test");
 	//parse("while.test");
-	parse("ssktest/test5.tig");
+	
+	parse("ssktest/test12.tig", String("ssktest/test12.txt"));
 	//parse("fac.tig");
 	//parse("string.tig");
 	//parse("array.tig");

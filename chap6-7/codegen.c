@@ -258,11 +258,18 @@ static Temp_temp munchStm(T_stm stm) {
 			}
 			else if (src->kind == T_MEM) {
 				Temp_temp s0 = munchExp(dst->u.MEM);
+				Temp_temp new1 = Temp_newtemp();
+					sprintf(assem_string, "mov `d0, `s0\n");
+					emit(AS_Move(String(assem_string), Temp_TempList(new1, NULL), Temp_TempList(s0, NULL)));
 				Temp_temp s1 = munchExp(src->u.MEM);
-				sprintf(assem_string, "mov [s0], `s1\n");
-				emit(AS_Move(String(assem_string), NULL, Temp_TempList(s0, Temp_TempList(s1, NULL))));
+				Temp_temp new2 = Temp_newtemp();
+				sprintf(assem_string, "mov `d0, [`s0]\n");
+				emit(AS_Move(String(assem_string), Temp_TempList(new2, NULL), Temp_TempList(s1, NULL)));
+				sprintf(assem_string, "mov [`s0], `s1\n");
+				emit(AS_Move(String(assem_string), NULL, Temp_TempList(new1, Temp_TempList(new2, NULL))));
 			}
 			else {
+				//assert(0);
 				Temp_temp s0 = munchExp(dst->u.MEM);
 				Temp_temp s1 = munchExp(src);
 				sprintf(assem_string, "mov [`s0], `s1\n");

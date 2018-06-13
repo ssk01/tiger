@@ -35,8 +35,10 @@ F_fragList SEM_transProg(A_exp exp) {
 	et = transExp(breakk, Tr_outermost(), v, t, exp);
 	
 	//FILE* out = fopen("tr_exp.txt", "w+");
+	Tr_procEntryExit(Tr_outermost(), "letme", et.exp);
 	FILE* out = stdout;
 	pr_tr(out,  et.exp, 4);
+
 	//printf("\n_________________________________________\n");
 	//canon(et.exp);
 
@@ -287,6 +289,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 	}
 	case A_callExp: {
 		E_enventry e = S_look(venv, a->u.call.func);
+		assert(e != NULL);
 		A_expList arg;
 		Ty_tyList ty;
 		Tr_expList args = NULL;
@@ -463,6 +466,8 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		A_exp whileExp = A_WhileExp(a->pos, test_exp, forSeqExp);
 		A_exp if_Exp = A_IfExp(a->pos, A_OpExp(a->pos, A_leOp, low_exp, high_Exp), whileExp, NULL);
 		A_exp let_exp = A_LetExp(a->pos, for_dec, if_Exp);
+		//Tr_level newlevel = Tr_newLevel(level, "fordec", NULL);
+
 		return transExp(breakk, level, venv, tenv, let_exp);
 		/*expty exp;
 		expty lo = transExp(breakk, level, venv, tenv, a->u.forr.hi);
@@ -588,9 +593,9 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		Tr_exp letexp = Tr_letExp(explist);
 		S_endScope(tenv);
 		S_endScope(venv);
-		if (!trLevelParent(level)) {
+		/*if (!trLevelParent(level)) {
 			Tr_procEntryExit(level, "letme",  letexp);
-		}
+		}*/
 		return expTy(letexp, exp.ty);
 		break;
 	}

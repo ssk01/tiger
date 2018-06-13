@@ -66,6 +66,8 @@ public:
 		CALL,
 		CMP,
 		JE,
+		JL,
+		JLE,
 		EXIT,
 	};
 	Ins() {};
@@ -184,6 +186,18 @@ public:
 		text.push_back((ins));
 		i++;
 	}
+	void addJLE(string s1) {
+		auto ins = Ins{ Ins::Type::JLE };
+		ins.operNum.push_back(new Num(s1));
+		text.push_back((ins));
+		i++;
+	}
+	void addJL(string s1) {
+		auto ins = Ins{ Ins::Type::JL };
+		ins.operNum.push_back(new Num(s1));
+		text.push_back((ins));
+		i++;
+	}
 	void addRET() {
 		auto ins = Ins{ Ins::Type::RET };
 		text.push_back((ins));
@@ -197,6 +211,9 @@ public:
 		else {
 			if (regs.find(s1) == regs.end()) {
 				regs[s1] = new Num(s1);
+				if (s1[0] == 'L') {
+					regs[s1]->i = reinterpret_cast<int>(stringData[s1].c_str());
+				}
 			}
 			ins.operNum.push_back(regs[s1]);
 		}
@@ -386,10 +403,21 @@ public:
 
 			}
 			case Ins::Type::JE: {
-				if (regs["flag"]->i) {
+				if (regs["flag"]->i == 1) {
 					pc = labelPos[ins.operNum[0]->reg];
 				}
-				/*cout <<"ebps " <<regs["ebp"]->i << endl;*/
+				break;
+			}
+			case Ins::Type::JLE: {
+				if (regs["flag"]->i == 3 || regs["flag"]->i == 1) {
+					pc = labelPos[ins.operNum[0]->reg];
+				}
+				break;
+			}
+			case Ins::Type::JL: {
+				if (regs["flag"]->i == 3) {
+					pc = labelPos[ins.operNum[0]->reg];
+				}
 				break;
 			}
 			case Ins::Type::CMP: {
@@ -399,8 +427,11 @@ public:
 				if (reg1->i == reg2->i) {
 					regs["flag"]->i = 1;
 				}
-				else {
-					regs["flag"]->i = 0;
+				else if (reg1->i > reg2->i) {
+					regs["flag"]->i = 2;
+				}
+				else if (reg1->i < reg2->i) {
+					regs["flag"]->i = 3;
 				}
 				break;
 			}
@@ -453,8 +484,15 @@ public:
 				}
 				else if (label->reg == "malloc") {
 					auto size = *(int *)(stack + regs["esp"]->i + 0);
-					regs["eax"]->i = reinterpret_cast<int >(arr);
-					arr += size;
+					if (size == 0) {
+						regs["eax"]->i = 0xcc;
+					}
+					else {
+						regs["eax"]->i = reinterpret_cast<int >(arr);
+						cout << "malloc addr :" << regs["eax"]->i << endl;
+						arr += size;
+
+					}
 					break;
 				}
 				else if (label->reg == "initArray") {

@@ -1,0 +1,7 @@
+let 
+	type a = b
+	type b = int 
+	var c:a := 1
+in
+	c
+end
