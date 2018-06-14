@@ -67,6 +67,7 @@ public:
 		CMP,
 		JE,
 		JL,
+		JG,
 		JLE,
 		EXIT,
 	};
@@ -188,6 +189,12 @@ public:
 	}
 	void addJLE(string s1) {
 		auto ins = Ins{ Ins::Type::JLE };
+		ins.operNum.push_back(new Num(s1));
+		text.push_back((ins));
+		i++;
+	}
+	void addJG(string s1) {
+		auto ins = Ins{ Ins::Type::JG};
 		ins.operNum.push_back(new Num(s1));
 		text.push_back((ins));
 		i++;
@@ -420,6 +427,12 @@ public:
 				}
 				break;
 			}
+			case Ins::Type::JG: {
+				if (regs["flag"]->i == 2) {
+					pc = labelPos[ins.operNum[0]->reg];
+				}
+				break;
+			}
 			case Ins::Type::CMP: {
 				auto reg1 = ins.operNum[0];
 				//cout << regs["r102"]->i << endl;
@@ -450,6 +463,8 @@ public:
 				pc = *(reinterpret_cast<int *>(stack + regs["ebp"]->i + 4));
 				if (pc == -1) {
 					//env = env->parent;
+					cout << "end result: " << regs["eax"]->i << endl;
+
 					return;
 				}
 				regs["esp"]->i = regs["ebp"]->i;
@@ -543,6 +558,7 @@ public:
 
 			}
 			default:
+				cout << "ins->t not eval" << (int)ins.t << endl;
 				assert(0);
 				break;
 			}

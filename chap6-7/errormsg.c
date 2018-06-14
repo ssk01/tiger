@@ -73,4 +73,6 @@ void EM_reset(string fname)
 void fck(string a) {
 	fprintf(stderr, a);
 	fprintf(stderr, "\n");
+	anyErrors = TRUE;
+
 }

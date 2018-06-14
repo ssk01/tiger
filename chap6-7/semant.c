@@ -70,6 +70,95 @@ bool Ty_tyEqual(Ty_ty lhs, Ty_ty rhs) {
 	}
 	return 0;
 }
+void boom(S_table tenv, S_symbol name, Ty_ty boo) {
+	Ty_ty t = S_look(tenv, name);
+	if (t == boo) {
+		fck("type recursive");
+		return;
+	} 
+	if (t->kind == Ty_name) {
+		t = actual_ty(tenv, t);
+	}
+	if (t != NULL &&t->kind == Ty_record) {
+		Ty_fieldList fl = t->u.record;
+		for (; fl; fl = fl->tail) {
+			Ty_field f = fl->head;
+			if (actual_ty(tenv, t) == boo) {
+				fck("type recursive");
+				return;
+			}
+			//f = fl->head;
+			if (actual_ty(tenv, f->ty) != t) {
+				boom(tenv, f->name, boo);
+			}
+		}
+	}
+}
+void recursive_types_boom(S_table tenv, Ty_ty t, Ty_ty boom) {
+		t = actual_ty(tenv, t);
+	if (t == boom) {
+		fck("type recursive");
+		return;
+	}
+	if (t != NULL &&t->kind == Ty_record) {
+		Ty_fieldList fl = t->u.record;
+		for (; fl; fl = fl->tail) {
+			Ty_field f = fl->head;
+			/*if (actual_ty(tenv, t) == boom) {
+				fck("type recursive");
+				return;
+			}*/
+			//f = fl->head;
+			if (actual_ty(tenv, f->ty) != t) {
+				recursive_types_boom(tenv, actual_ty(tenv, f->ty), boom);
+			}
+		}
+	}
+	else if (t->kind == Ty_array) {
+		Ty_ty arr = t->u.array;
+		arr = actual_ty(tenv, arr);
+		recursive_types_boom(tenv, arr, t);
+	}
+
+}
+void recursive_types(S_table tenv, Ty_ty t) {
+	//Ty_ty t = S_look(tenv, name);
+	t = actual_ty(tenv, t);
+	if (t->kind == Ty_record) {
+		Ty_fieldList fl = t->u.record;
+		for (; fl; fl = fl->tail) {
+			Ty_field f = fl->head;
+			//f = fl->head;
+			if (actual_ty(tenv, f->ty) != t) {
+				recursive_types_boom(tenv, f->ty, t);
+			}
+		}
+	}
+	else if (t->kind == Ty_array) {
+		Ty_ty arr = t->u.array;
+		arr = actual_ty(tenv, arr);
+		recursive_types_boom(tenv, arr, t);
+	}
+}
+void recursive_type(S_table tenv, S_symbol name) {
+	Ty_ty t = S_look(tenv, name);
+	t = actual_ty(tenv, t);
+	if (t->kind == Ty_record) {
+		Ty_fieldList fl = t->u.record;
+		for (; fl; fl = fl->tail) {
+			Ty_field f = fl->head;
+			//f = fl->head;
+			if (actual_ty(tenv, f->ty) != t) {
+				boom(tenv, f->name, t);
+			}
+		}
+	}
+	else if (t->kind == Ty_array) {
+		Ty_ty arr = t->u.array;
+		arr = actual_ty(tenv, arr);
+
+	}
+}
 Ty_ty actual_ty(S_table tenv, Ty_ty ty) {
 	Ty_ty t;
 	if (ty->kind == Ty_name) {
@@ -79,7 +168,7 @@ Ty_ty actual_ty(S_table tenv, Ty_ty ty) {
 			fck("type recruse");
 			return Ty_Nil();
 		}*/
-		t = ty;
+		//t = ty;
 		//Ty_print(ty);
 
 		t = S_look(tenv, t->u.name.sym);
@@ -89,12 +178,14 @@ Ty_ty actual_ty(S_table tenv, Ty_ty ty) {
 			t = S_look(tenv, t->u.name.ty->u.name.sym);
 			Ty_print(t);
 			if (t->u.name.sym == ty->u.name.sym) {
-				fck("type recruse");
+				fck("type recursive");
+				//exit(0£©
 				return Ty_Nil();
 			}
 		}
 		return t;
 	}
+
 	else {
 		return ty;
 	}
@@ -111,7 +202,9 @@ Ty_fieldList makefieldList(S_table tenv, A_fieldList f) {
 	if (f) {
 		Ty_ty ty = S_look(tenv, f->head->typ);
 		//Ty_field field = Ty_Field(f->head->name, ty);
+		//assert(ty != NULL);
 		Ty_field field = Ty_Field(f->head->name, ty);
+		S_enter(tenv, f->head->name, ty);
 		return  Ty_FieldList(field, makefieldList(tenv, f->tail));
 	}
 	return NULL;
@@ -166,20 +259,15 @@ expty transVar(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_var 
 		break;
 	}
 }
-
-
-Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
-	switch (d->kind)
-	{
-	case A_varDec: {
-		//var x:= exp
+Tr_exp transVarDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
+	if (d->kind == A_varDec) {
 		Tr_access ac = NULL;
 		expty e = transExp(breakk, level, venv, tenv, d->u.var.init);
 		if (d->u.var.typ != NULL) {
 			Ty_ty ty = S_look(tenv, d->u.var.typ);
 			if (actual_ty(tenv, ty) != actual_ty(tenv, e.ty)) {
 				Ty_print(actual_ty(tenv, ty));
-				Ty_print(e.ty);
+				//Ty_print(e.ty);
 				Ty_print(actual_ty(tenv, e.ty));
 				//? equal how
 				EM_error(0, "var dec type not equal %s", "");
@@ -188,6 +276,99 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 		ac = Tr_allocLocal(level, d->u.var.escape);
 		S_enter(venv, d->u.var.var, E_VarEntry(ac, e.ty));
 		return Tr_assign(Tr_simpleVar(ac, level), e.exp);
+	}
+	return Tr_noExp();
+}
+void transActualDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
+	switch (d->kind)
+	{
+	case A_varDec: {
+		break;
+	}
+	case A_functionDec: {
+		A_fundecList list;
+
+		for (list = d->u.function; list; list = list->tail) {
+			A_fundec f = list->head;
+			Ty_ty resultTy = Ty_Void();
+			if (f->result != NULL) {
+				resultTy = S_look(tenv, f->result);
+				//printf("resty\n");
+			}
+			Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
+			E_enventry funEntry = S_look(venv, f->name);
+
+			S_beginScope(venv);
+			{
+				A_fieldList l;
+				Ty_tyList t;
+				Tr_accessList Tr_acl = Tr_formals(funEntry->u.fun.level);
+				for (l = f->params, t = formalTys; l; l = l->tail, t = t->tail, Tr_acl = Tr_acl->tail) {
+					S_enter(venv, l->head->name, E_VarEntry(Tr_acl->head, t->head));
+				}
+				expty e = transExp(breakk, funEntry->u.fun.level, venv, tenv, list->head->body);
+				if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
+					EM_error(0, "function result type not match %s", "");
+				}
+				Tr_procEntryExit(funEntry->u.fun.level, funEntry->u.fun.name, e.exp);
+				printf("ok fundec: %s \n", f->name->name);
+			}
+			S_endScope(venv);
+		}
+		break;
+	}
+	case A_typeDec:{
+		A_nametyList n;
+
+		for (n = d->u.type; n; n = n->tail) {
+			//Ty_ty ty = S_look(tenv, n->head->name);
+			//ty
+			//if (ty->kind == Ty_record) {
+
+			//}
+			/*Ty_ty ty = transTy(tenv, n->head->ty);
+			if (ty->u.name.sym == n->head->name) {
+			fck("fuck rec");
+			}
+			S_enter(tenv, n->head->name, transTy(tenv, n->head->ty));*/
+			Ty_ty ty = S_look(tenv, n->head->name);
+			Ty_ty rhs = transTy(tenv, n->head->ty);
+			if (rhs->kind == Ty_name) {
+				ty->u.name.ty = rhs;
+			}
+			else {
+				S_enter(tenv, n->head->name, rhs);
+			}
+			//actual_ty(tenv, S_look(tenv, n->head->name));
+			recursive_types(tenv, S_look(tenv, n->head->name));
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
+	switch (d->kind)
+	{
+	case A_varDec: {
+		//var x:= exp
+		//Tr_access ac = NULL;
+		//expty e = transExp(breakk, level, venv, tenv, d->u.var.init);
+		//if (d->u.var.typ != NULL) {
+		//	Ty_ty ty = S_look(tenv, d->u.var.typ);
+		//	if (actual_ty(tenv, ty) != actual_ty(tenv, e.ty)) {
+		//		Ty_print(actual_ty(tenv, ty));
+		//		//Ty_print(e.ty);
+		//		Ty_print(actual_ty(tenv, e.ty));
+		//		//? equal how
+		//		EM_error(0, "var dec type not equal %s", "");
+		//	}
+		//}
+		//ac = Tr_allocLocal(level, d->u.var.escape);
+		//S_enter(venv, d->u.var.var, E_VarEntry(ac, e.ty));
+		//return Tr_assign(Tr_simpleVar(ac, level), e.exp);
 		break;
 	}
 	case A_functionDec: {
@@ -204,34 +385,33 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 			Tr_level newlevel = Tr_newLevel(level, fun_lable, makeBoolList(f->params));
 			S_enter(venv, f->name, E_FunEntry(newlevel, fun_lable, formalTys, resultTy, S_name(f->name)));
 		}
-		for (list = d->u.function; list; list = list->tail) {
-			A_fundec f = list->head;
-			Ty_ty resultTy = Ty_Void();
-			if (f->result != NULL) {
-				resultTy = S_look(tenv, f->result);
-				//printf("resty\n");
-			}
-			Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
-			E_enventry funEntry =  S_look(venv, f->name);
+		//for (list = d->u.function; list; list = list->tail) {
+		//	A_fundec f = list->head;
+		//	Ty_ty resultTy = Ty_Void();
+		//	if (f->result != NULL) {
+		//		resultTy = S_look(tenv, f->result);
+		//		//printf("resty\n");
+		//	}
+		//	Ty_tyList formalTys = makeFormalTyList(tenv, f->params);
+		//	E_enventry funEntry =  S_look(venv, f->name);
 
-			S_beginScope(venv);
-			{
-				A_fieldList l;
-				Ty_tyList t;
-				Tr_accessList Tr_acl = Tr_formals(funEntry->u.fun.level);
-				for (l = f->params, t = formalTys; l; l = l->tail, t = t->tail, Tr_acl = Tr_acl->tail) {
-					S_enter(venv, l->head->name, E_VarEntry(Tr_acl->head, t->head));
-				}
-				expty e = transExp(breakk, funEntry->u.fun.level, venv, tenv, list->head->body);
-				if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
-					EM_error(0, "function result type not match %s", "");
-				}
-				Tr_procEntryExit(funEntry->u.fun.level, funEntry->u.fun.name ,e.exp);
-				printf("ok fundec: %s \n", f->name->name);
-			}
-			S_endScope(venv);
-		}
-		return Tr_noExp();
+		//	S_beginScope(venv);
+		//	{
+		//		A_fieldList l;
+		//		Ty_tyList t;
+		//		Tr_accessList Tr_acl = Tr_formals(funEntry->u.fun.level);
+		//		for (l = f->params, t = formalTys; l; l = l->tail, t = t->tail, Tr_acl = Tr_acl->tail) {
+		//			S_enter(venv, l->head->name, E_VarEntry(Tr_acl->head, t->head));
+		//		}
+		//		expty e = transExp(breakk, funEntry->u.fun.level, venv, tenv, list->head->body);
+		//		if (e.ty != resultTy && e.ty != Ty_Nil() && resultTy != Ty_Nil()) {
+		//			EM_error(0, "function result type not match %s", "");
+		//		}
+		//		Tr_procEntryExit(funEntry->u.fun.level, funEntry->u.fun.name ,e.exp);
+		//		printf("ok fundec: %s \n", f->name->name);
+		//	}
+		//	S_endScope(venv);
+		//}
 		break;
 	}
 	case A_typeDec: {
@@ -239,27 +419,28 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 		for (n = d->u.type; n; n = n->tail) {
 			S_enter(tenv, n->head->name, Ty_Name(n->head->name, NULL));
 		}
-		for (n = d->u.type; n; n = n->tail) {
-			//Ty_ty ty = S_look(tenv, n->head->name);
-			//ty
-			//if (ty->kind == Ty_record) {
+		//for (n = d->u.type; n; n = n->tail) {
+		//	//Ty_ty ty = S_look(tenv, n->head->name);
+		//	//ty
+		//	//if (ty->kind == Ty_record) {
 
-			//}
-			/*Ty_ty ty = transTy(tenv, n->head->ty);
-			if (ty->u.name.sym == n->head->name) {
-				fck("fuck rec");
-			}
-			S_enter(tenv, n->head->name, transTy(tenv, n->head->ty));*/
-			Ty_ty ty = S_look(tenv, n->head->name);
-			Ty_ty rhs = transTy(tenv, n->head->ty);
-			if (rhs->kind == Ty_name) {
-				ty->u.name.ty = rhs;
-			}
-			else {
-				S_enter(tenv, n->head->name, rhs); 
-			}
-			actual_ty(tenv, S_look(tenv, n->head->name));
-		}
+		//	//}
+		//	/*Ty_ty ty = transTy(tenv, n->head->ty);
+		//	if (ty->u.name.sym == n->head->name) {
+		//		fck("fuck rec");
+		//	}
+		//	S_enter(tenv, n->head->name, transTy(tenv, n->head->ty));*/
+		//	Ty_ty ty = S_look(tenv, n->head->name);
+		//	Ty_ty rhs = transTy(tenv, n->head->ty);
+		//	if (rhs->kind == Ty_name) {
+		//		ty->u.name.ty = rhs;
+		//	}
+		//	else {
+		//		S_enter(tenv, n->head->name, rhs); 
+		//	}
+		//	actual_ty(tenv, S_look(tenv, n->head->name));
+		//	recursive_type(tenv, n->head->name);
+		//}
 		return Tr_noExp();
 
 		break;
@@ -267,6 +448,8 @@ Tr_exp transDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec
 	default:
 		break;
 	}
+	return Tr_noExp();
+
 }
 
 expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_exp a) {
@@ -312,6 +495,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 	}
 	case A_recordExp: {
 		Ty_ty ty = S_look(tenv, a->u.record.typ);
+		//ty = actual_ty(tenv, ty);
 		if (ty->kind == Ty_record) {
 			Ty_fieldList tylist = ty->u.record;
 			A_efieldList elist = a->u.record.fields;
@@ -338,6 +522,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 			Tr_exp res = Tr_recordExp(recExpList, attrNum);
 			return expTy(res, ty);
 		}
+		assert(0);
 		break;
 	}
 	case A_seqExp: {
@@ -395,6 +580,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		}
 		if (!typeEq(tenv, then.ty, elsee.ty)) {
 			fck("if type error");
+			exit(0);
 		}
 		if (a->u.iff.test->kind == A_ifExp) {
 			A_exp innerIf = a->u.iff.test;
@@ -504,6 +690,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		Ty_ty ty = S_look(tenv, a->u.array.typ);
 		expty size = transExp(breakk, level, venv, tenv, a->u.array.size);
 		expty init = transExp(breakk, level, venv, tenv, a->u.array.init);
+		//ty =
 		if (size.ty == Ty_Int()) {
 			if (init.ty == ty->u.array) {
 				return expTy(Tr_arrayExp(size.exp, init.exp), ty);
@@ -585,8 +772,16 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		S_beginScope(tenv);
 		Tr_expList explist = NULL;
 		for (d = a->u.let.decs; d; d = d->tail) {
-			Tr_exp dec = transDec(breakk, level, venv, tenv, d->head);
+			transDec(breakk, level, venv, tenv, d->head);
+			//explist = Tr_ExpList(dec, explist);
+		}
+		for (d = a->u.let.decs; d; d = d->tail) {
+			transActualDec(breakk, level, venv, tenv, d->head);
+		}
+		for (d = a->u.let.decs; d; d = d->tail) {
+			Tr_exp dec = transVarDec(breakk, level, venv, tenv, d->head);
 			explist = Tr_ExpList(dec, explist);
+
 		}
 		exp = transExp(breakk, level, venv, tenv, a->u.let.body);
 		explist = Tr_ExpList(exp.exp, explist);

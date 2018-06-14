@@ -96,6 +96,10 @@ void parseProc(Vm &v, vector<string>& insLine) {
 		auto label = insLine[1];
 		v.addJLE(label);
 	}
+	else if (insLine[0] == "jg") {
+		auto label = insLine[1];
+		v.addJG(label);
+	}
 	else if (insLine[0] == "jl") {
 		auto label = insLine[1];
 		v.addJL(label);
@@ -136,6 +140,7 @@ void parse(Vm &v, string filename) {
 	ifstream f(filename);
 	if (!f.is_open()) {
 		cout << "not open" << endl;
+		exit(0);
 	}
 	char buf[1024];
 	auto split = [](string line) {
