@@ -480,7 +480,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		for (arg = a->u.call.args, ty = e->u.fun.formals; arg && ty; arg = arg->tail, ty = ty->tail) {
 			expty arg1 = transExp(breakk, level, venv, tenv, arg->head);
 			args = Tr_ExpList(arg1.exp, args);
-			if (arg1.ty != ty->head) {
+			if (actual_ty(tenv, arg1.ty) != actual_ty(tenv, ty->head)) {
 				Ty_tyKind(arg1.ty);
 				Ty_tyKind(ty->head);
 				fck("call arguments not matched");

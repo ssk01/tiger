@@ -8,7 +8,7 @@ void parseString(Vm &v, vector<string>& insLine) {
 void parseProc(Vm &v, vector<string>& insLine) {
 	if (insLine[0] == "BEGIN") {
 		v.addLabel(insLine[1]);
-	}
+	}	
 	else if (insLine[0] == "END") {
 		//continue;
 		return;

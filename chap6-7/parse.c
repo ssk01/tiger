@@ -49,7 +49,7 @@ A_exp parse(string fname, string path)
 		FILE * out = stdout;
 		out = fopen(path, "w+");
 		//out = stdout;
-		pr_exp(out, absyn_root, 4);
+		pr_exp(stdout, absyn_root, 4);
 		printf("\n_________________________________________\n");
 		F_fragList frags = SEM_transProg(absyn_root);
 		if (anyErrors) {
@@ -81,7 +81,8 @@ int main() {
 	//parse("while.test");
 	//parse("while.test");
 	
-	parse("ssktest/test27.tig", String("ssktest/test27.txt"));
+	parse("ssktest/42.tig", String("ssktest/42.txt"));
+	//parse("ssktest/test12.tig", String("ssktest/test12.txt"));
 	//parse("fac.tig");
 	//parse("string.tig");
 	//parse("array.tig");
