@@ -6,7 +6,10 @@ int main() {
 	Vm vm;
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/fac_1.txt");
 	/*parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/test2.txt");*/
-	parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/42.txt");
+	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/iff.txt");
+	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/slice.txt");
+	parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/king.txt");
+	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/mul.txt");
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/test12.txt");
 	vm.Run();
 	//auto b = new int[0];

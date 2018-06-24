@@ -1,0 +1,38 @@
+string: 
+
+proc:     letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 4
+L2:
+mov	r104,1
+mov [ebp+-4], r104
+mov	r107,7
+sub r106,0-r107
+mov	r110,[ebp+-4]
+mov	r112,10
+sub r111,0-r112
+mul r109,r110*r111
+mov	r115,3
+sub r114,0-r115
+mov	r117,10
+sub r116,0-r117
+mul r113,r114*r116
+sub r108,r109-r113
+add r105,r106+r108
+mov [ebp+-4], r105
+mov	r119,[ebp+-4]
+push r119
+mov	r120,[ebp+8]
+push r120
+call	printInt
+jmp	L1
+L1:
+ret
+
+END L0
+

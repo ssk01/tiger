@@ -1,0 +1,7 @@
+let 
+var a:=11
+    function printboard() =
+		printInt(a)
+in
+printboard()
+end

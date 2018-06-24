@@ -96,6 +96,14 @@ void parseProc(Vm &v, vector<string>& insLine) {
 		auto label = insLine[1];
 		v.addJLE(label);
 	}
+	else if (insLine[0] == "jge") {
+		auto label = insLine[1];
+		v.addJGE(label);
+	}
+	else if (insLine[0] == "jne") {
+		auto label = insLine[1];
+		v.addJNE(label);
+	}
 	else if (insLine[0] == "jg") {
 		auto label = insLine[1];
 		v.addJG(label);

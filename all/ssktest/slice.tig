@@ -1,0 +1,69 @@
+let 
+ type any = {any : int}
+ var buffer := getchar()
+  var any := any{any=0}
+type list = {first: int, rest: list}
+
+ function readint(any: any) : int =
+ let var i := 0
+     function isdigit(s : string) : int = 
+		  ord(s)>=ord("0") & ord(s)<=ord("9")
+     function skipto() =
+       while buffer="a" 
+         do buffer := getchar()
+  in skipto();
+     any.any := isdigit(buffer);
+	 print("any.any");
+	 	 printInt(any.any);
+     while isdigit(buffer)
+       do (i := ord(buffer)-ord("0"); buffer := getchar();printInt(i));
+     i
+ end
+ 
+ 
+   function printlist(l: list) =
+   if l=nil then print("newline")
+   else (printInt(l.first); print("_"); printlist(l.rest))
+ 
+ function merge(a: list, b: list) : list =
+   if a=nil then b
+   else if b=nil then a
+    
+   else if a.first < b.first 
+      
+	  then list{first=a.first,rest=merge(a.rest,b)}
+      else list{first=b.first,rest=merge(a,b.rest)}
+	   
+ 
+ function readlist() : list =
+    let var any := any{any=0}
+        var i := readint(any)
+     in 
+	 if any.any
+         then list{first=i,rest=readlist()}
+         else (print("fuck");nil)
+    end
+	
+	function nn():list =
+	    let var any := any{any=0}
+     in 
+	 if any.any
+         then list{first=1,rest=nil}
+         else nil
+    end
+	 
+   var list1 := readlist()
+   var list2 := (buffer:=getchar(); readlist())
+
+   in 
+/*
+ printlist(readlist())
+ */
+ printlist(list1);
+ print("wtf");
+  printlist(list2);
+print("wtf");
+printlist(merge(list1, list2));
+
+end
+

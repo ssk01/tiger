@@ -30,27 +30,27 @@ mov	r113,0
 cmp	r112, r113
 je L1
 L6:
-mov	r114,[ebp+-4]
-add eax,r114+1
-mov [ebp+-4], eax
-mov	r116,[ebp+-4]
-push r116
-mov	r117,[ebp+8]
+mov	r115,[ebp+-4]
+add r114,r115+1
+mov [ebp+-4], r114
+mov	r117,[ebp+-4]
 push r117
+mov	r118,[ebp+8]
+push r118
 call	printInt
-mov	r124,[ebp+-8]
-mov	r125,[ebp+-12]
-cmp	r124, r125
+mov	r125,[ebp+-8]
+mov	r126,[ebp+-12]
+cmp	r125, r126
 jl L2
 L3:
-mov	r126,0
-mov [ebp+-16], r126
+mov	r127,0
+mov [ebp+-16], r127
 L4:
 jmp	L5
 L2:
-mov	r128,[ebp+-8]
-add eax,r128+1
-mov [ebp+-8], eax
+mov	r130,[ebp+-8]
+add r129,r130+1
+mov [ebp+-8], r129
 jmp	L4
 L1:
 jmp	L8

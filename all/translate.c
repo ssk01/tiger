@@ -170,8 +170,7 @@ static Tr_exp Tr_ifExpWithElse(Tr_exp test, Tr_exp then, Tr_exp elsee)
 			T_Eseq(T_Move(T_Temp(r), unEx(then)),
 				T_Eseq(joinJump, T_Eseq(T_Label(f),
 					T_Eseq(T_Move(T_Temp(r), unEx(elsee)),
-						T_Eseq(joinJump,
-							T_Eseq(T_Label(join), T_Temp(r))))))))));
+							T_Eseq(T_Label(join), T_Temp(r)))))))));
 		printf("fffffffffffffffffffffffffffffff");
 	}
 	else {
@@ -183,6 +182,9 @@ static Tr_exp Tr_ifExpWithElse(Tr_exp test, Tr_exp then, Tr_exp elsee)
 		result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t), T_Seq(thenStm,
 			T_Seq(joinJump, T_Seq(T_Label(f),
 				T_Seq(elseeStm, T_Seq(joinJump, T_Label(join)))))))));
+		/*result = Tr_Nx(T_Seq(cond.stm, T_Seq(T_Label(t), T_Seq(thenStm,
+			T_Seq(joinJump, T_Seq(T_Label(f),
+				T_Seq(elseeStm,  T_Label(join))))))));*/
 	}
 	return result;
 }
@@ -309,12 +311,12 @@ Tr_exp Tr_noExp() {
 	return Tr_Ex(T_Const(0));
 }
 Tr_exp Tr_nilExp() {
-	if (!nil_temp) {
+	//if (!nil_temp) {
 		nil_temp = Temp_newtemp();
 		T_stm t_malloc = T_Move(T_Temp(nil_temp), ExternCall(String("malloc"), T_ExpList(T_Const(0), NULL)));
 		return Tr_Ex(T_Eseq(t_malloc, T_Temp(nil_temp)));
-	}
-	return Tr_Ex(T_Temp(nil_temp));
+	//}
+	//return Tr_Ex(T_Temp(nil_temp));
 }
 Tr_exp Tr_intExp(int i) {
 	return Tr_Ex(T_Const(i));

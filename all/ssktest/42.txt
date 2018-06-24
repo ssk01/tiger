@@ -1,0 +1,121 @@
+string: 
+
+proc:     letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 8
+L2:
+add eax,ebp+-4
+mov r104, eax
+mov	r109,2
+push r109
+mov	r110,2
+push r110
+call	initArray
+mov r103, eax
+mov [r104], r103
+add eax,ebp+-8
+mov r102, eax
+mov	r118,[ebp+-4]
+push r118
+mov	r119,2
+push r119
+call	initArray
+mov r101, eax
+mov [r102], r101
+mov	r120,[ebp+-4]
+mov	r121,4
+mul eax,r121*1
+add eax,r120+eax
+mov	r122,22
+mov [eax], r122
+mov	r125,[ebp+-4]
+mov	r126,4
+mul eax,r126*1
+add eax,r125+eax
+mov	r124,[eax]
+push r124
+mov	r127,[ebp+8]
+push r127
+call	printInt
+mov	r131,[ebp+-8]
+mov	r132,4
+mul eax,r132*0
+add eax,r131+eax
+mov	r130,[eax]
+mov	r133,4
+mul eax,r133*1
+add eax,r130+eax
+mov	r129,[eax]
+push r129
+mov	r134,[ebp+8]
+push r134
+call	printInt
+mov	r138,[ebp+-8]
+mov	r139,4
+mul eax,r139*1
+add eax,r138+eax
+mov	r137,[eax]
+mov	r140,4
+mul eax,r140*1
+add eax,r137+eax
+mov	r136,[eax]
+push r136
+mov	r141,[ebp+8]
+push r141
+call	printInt
+mov	r143,[ebp+-8]
+mov	r144,4
+mul eax,r144*1
+add eax,r143+eax
+mov	r142,[eax]
+mov	r145,4
+mul eax,r145*1
+add eax,r142+eax
+mov	r146,23
+mov [eax], r146
+mov	r149,[ebp+-4]
+mov	r150,4
+mul eax,r150*1
+add eax,r149+eax
+mov	r148,[eax]
+push r148
+mov	r151,[ebp+8]
+push r151
+call	printInt
+mov	r155,[ebp+-8]
+mov	r156,4
+mul eax,r156*0
+add eax,r155+eax
+mov	r154,[eax]
+mov	r157,4
+mul eax,r157*1
+add eax,r154+eax
+mov	r153,[eax]
+push r153
+mov	r158,[ebp+8]
+push r158
+call	printInt
+mov	r162,[ebp+-8]
+mov	r163,4
+mul eax,r163*1
+add eax,r162+eax
+mov	r161,[eax]
+mov	r164,4
+mul eax,r164*1
+add eax,r161+eax
+mov	r160,[eax]
+push r160
+mov	r165,[ebp+8]
+push r165
+call	printInt
+jmp	L1
+L1:
+ret
+
+END L0
+

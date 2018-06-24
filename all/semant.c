@@ -260,7 +260,9 @@ expty transVar(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_var 
 	}
 }
 Tr_exp transVarDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
-	if (d->kind == A_varDec) {
+	switch (d->kind)
+	{
+	case A_varDec: {
 		Tr_access ac = NULL;
 		expty e = transExp(breakk, level, venv, tenv, d->u.var.init);
 		if (d->u.var.typ != NULL) {
@@ -276,13 +278,6 @@ Tr_exp transVarDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_
 		ac = Tr_allocLocal(level, d->u.var.escape);
 		S_enter(venv, d->u.var.var, E_VarEntry(ac, e.ty));
 		return Tr_assign(Tr_simpleVar(ac, level), e.exp);
-	}
-	return Tr_noExp();
-}
-void transActualDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
-	switch (d->kind)
-	{
-	case A_varDec: {
 		break;
 	}
 	case A_functionDec: {
@@ -315,6 +310,20 @@ void transActualDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A
 			}
 			S_endScope(venv);
 		}
+		break;
+	}
+	default: {
+	}
+	}
+	return Tr_noExp();
+}
+void transActualDec(Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_dec d) {
+	switch (d->kind)
+	{
+	case A_varDec: {
+		break;
+	}
+	case A_functionDec: {
 		break;
 	}
 	case A_typeDec:{
@@ -472,6 +481,9 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 	}
 	case A_callExp: {
 		E_enventry e = S_look(venv, a->u.call.func);
+		if (e == NULL) {
+			printf(" not find name %s", S_name(a->u.call.func));
+		}
 		assert(e != NULL);
 		A_expList arg;
 		Ty_tyList ty;
@@ -480,7 +492,7 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		for (arg = a->u.call.args, ty = e->u.fun.formals; arg && ty; arg = arg->tail, ty = ty->tail) {
 			expty arg1 = transExp(breakk, level, venv, tenv, arg->head);
 			args = Tr_ExpList(arg1.exp, args);
-			if (actual_ty(tenv, arg1.ty) != actual_ty(tenv, ty->head)) {
+			if (arg1.ty !=Ty_Nil() && ty->head != Ty_Nil() && actual_ty(tenv, arg1.ty) != actual_ty(tenv, ty->head)) {
 				Ty_tyKind(arg1.ty);
 				Ty_tyKind(ty->head);
 				fck("call arguments not matched");
@@ -781,7 +793,6 @@ expty  transExp( Tr_exp breakk, Tr_level level, S_table venv, S_table tenv, A_ex
 		for (d = a->u.let.decs; d; d = d->tail) {
 			Tr_exp dec = transVarDec(breakk, level, venv, tenv, d->head);
 			explist = Tr_ExpList(dec, explist);
-
 		}
 		exp = transExp(breakk, level, venv, tenv, a->u.let.body);
 		explist = Tr_ExpList(exp.exp, explist);

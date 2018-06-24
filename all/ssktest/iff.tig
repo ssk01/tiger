@@ -1,0 +1,9 @@
+let
+var a:=2
+var b := 3
+function ift(a:int) :int=
+if a = 2 &b=3 then 2
+else 5
+in
+ printInt(ift(3))
+end

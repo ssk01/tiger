@@ -1,4 +1,3 @@
-#pragma once
 /* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
@@ -143,7 +142,6 @@ enum yytokentype
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 #include "absyn.h"
-#include "symbol.h"
 union YYSTYPE
 {
 #line 23 "tiger.grm" /* yacc.c:1909  */
@@ -156,9 +154,12 @@ union YYSTYPE
 	A_exp exp;
 	A_exp value;
 	A_exp opnum;
+	A_exp mulvalue;
+	A_exp addvalue;
+	A_exp svalue;
 	A_exp testnum;
 	A_expList expList;
-	A_oper op;
+	//A_oper op;
 	A_decList decList;
 	A_fundecList fundecList;
 	A_fundec fundec;
@@ -173,7 +174,7 @@ union YYSTYPE
 	A_ty ty;
 
 
-#line 175 "y.tab.h" /* yacc.c:1909  */
+#line 178 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

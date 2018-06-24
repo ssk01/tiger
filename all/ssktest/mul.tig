@@ -1,0 +1,6 @@
+let 
+var i:= 1
+in
+ i:=-7+ i*-10--3*-10 ;
+ printInt(i)
+end

@@ -68,6 +68,8 @@ public:
 		JE,
 		JL,
 		JG,
+		JGE,
+		JNE,
 		JLE,
 		EXIT,
 	};
@@ -122,6 +124,7 @@ private:
 	regEnvPtr env;
 	map<string, int> labelPos;
 	map<string, string> stringData;
+	Num *lastNum;
 	char *arr;
 	char * beg;
 public:
@@ -129,22 +132,23 @@ public:
 		//text.resize(400);
 		stack = new char[400];
 		memset(stack, 0, 400);
-
+		lastNum = nullptr;
 		arr = new char[4000];
 		beg = arr;
 		memset(arr, 0, 4000);
 		regs["ebp"] = new Num("ebp");
 		regs["esp"] = new Num("esp");
 		regs["flag"] = new Num("flag");
-		regs["flag"] = new Num("eax");
+		regs["eax"] = new Num("eax");
 		regs["flag"]->i = 1;
 		regs["ebp"]->i = 400;
 		regs["esp"]->i = 400;
+		regs["eax"]->i = 1024;
 		env = new regEnv();
 		env->parent = NULL;
 	}
 	~Vm() {
-		delete[] stack;
+		//delete[] stack;
 		//delete env;
 
 		cout << "vm deconstructor" << endl;
@@ -183,6 +187,18 @@ public:
 	}
 	void addJE(string s1) {
 		auto ins = Ins{ Ins::Type::JE };
+		ins.operNum.push_back(new Num(s1));
+		text.push_back((ins));
+		i++;
+	}
+	void addJGE(string s1) {
+		auto ins = Ins{ Ins::Type::JGE };
+		ins.operNum.push_back(new Num(s1));
+		text.push_back((ins));
+		i++;
+	}
+	void addJNE(string s1) {
+		auto ins = Ins{ Ins::Type::JNE };
 		ins.operNum.push_back(new Num(s1));
 		text.push_back((ins));
 		i++;
@@ -299,11 +315,17 @@ public:
 		if (regs.find(s1) == regs.end()) {
 			regs[s1] = new Num(s1);
 		}
-		if (regs.find(s2) == regs.end()) {
-			regs[s2] = new Num(s2);
-		}
 		ins.operNum.push_back(regs[s1]);
-		ins.operNum.push_back(regs[s2]);
+		if (isalpha(s2[0])) {
+			if (regs.find(s2) == regs.end()) {
+				regs[s2] = new Num(s2);
+			}
+			ins.operNum.push_back(regs[s2]);
+		}
+		else {
+			ins.operNum.push_back(new Num(atoi(s2.c_str())));
+		}
+		//ins.operNum.push_back(regs[s2]);
 		if (isalpha(s3[0])) {
 			if (regs.find(s3) == regs.end()) {
 				regs[s3] = new Num(s3);
@@ -334,7 +356,13 @@ public:
 	}
 	void Run() {
 		//regs["eax"]->i = -1;
+		int dead = 0;
 		while (pc < text.size()) {
+			dead++;
+			/*if (dead > 5000) {
+				cout << "dead  "<<pc << endl;
+				exit(0);
+			}*/
 			auto ins = text[pc];
 			switch (ins.t)
 			{
@@ -346,6 +374,7 @@ public:
 				auto reg2 = ins.operNum[1];
 				auto reg3 = ins.operNum[2];
 				reg1->i = reg2->i * reg3->i;
+				lastNum = reg3;
 				break;
 
 			}
@@ -353,6 +382,7 @@ public:
 				auto reg1 = ins.operNum[0];
 				auto reg2 = ins.operNum[1];
 				reg1->i = reg2->i;
+				lastNum = reg1;
 				/*cout << regs[reg1->reg]->i << endl;*/
 				break;
 
@@ -361,6 +391,8 @@ public:
 				auto reg1 = ins.operNum[0];
 				auto reg2 = ins.operNum[1];
 				reg1->i = reg2->i;
+				lastNum = reg1;
+
 				break;
 
 			}
@@ -388,6 +420,8 @@ public:
 					reg1->i = *(reinterpret_cast<int *>(stack + reg2->i + reg3->i));
 
 				}
+				lastNum = reg1;
+
 				/*	if (reg1->reg == "r121") {
 				cout << (char*)reg1->i << endl;
 				}
@@ -401,6 +435,8 @@ public:
 				auto reg2 = ins.operNum[1];
 				auto reg3 = ins.operNum[2];
 				reg1->i = reg2->i - reg3->i;
+				lastNum = reg1;
+
 				break;
 			}
 			case Ins::Type::PUSH: {
@@ -415,6 +451,7 @@ public:
 				}
 				break;
 			}
+
 			case Ins::Type::JLE: {
 				if (regs["flag"]->i == 3 || regs["flag"]->i == 1) {
 					pc = labelPos[ins.operNum[0]->reg];
@@ -423,6 +460,18 @@ public:
 			}
 			case Ins::Type::JL: {
 				if (regs["flag"]->i == 3) {
+					pc = labelPos[ins.operNum[0]->reg];
+				}
+				break;
+			}
+			case Ins::Type::JGE: {
+				if (regs["flag"]->i == 2 || regs["flag"]->i == 1) {
+					pc = labelPos[ins.operNum[0]->reg];
+				}
+				break;
+			}
+			case Ins::Type::JNE: {
+				if (regs["flag"]->i != 1) {
 					pc = labelPos[ins.operNum[0]->reg];
 				}
 				break;
@@ -453,6 +502,8 @@ public:
 				auto reg2 = ins.operNum[1];
 				auto reg3 = ins.operNum[2];
 				reg1->i = reg2->i + reg3->i;
+				lastNum = reg1;
+
 				break;
 			}
 			case Ins::Type::POP: {
@@ -461,8 +512,14 @@ public:
 			case Ins::Type::RET: {
 				/*	cout << "ret value" << regs["eax"]->i << endl;*/
 				pc = *(reinterpret_cast<int *>(stack + regs["ebp"]->i + 4));
+				if (lastNum != nullptr) {
+					regs["eax"]->i = lastNum->i;
+					lastNum = nullptr;
+				}
 				if (pc == -1) {
 					//env = env->parent;
+					//lastNum = reg1;
+
 					cout << "end result: " << regs["eax"]->i << endl;
 
 					return;
@@ -490,17 +547,42 @@ public:
 				auto label = ins.operNum[0];
 				if (label->reg == "printInt") {
 					auto arg = *(int *)(stack + regs["esp"]->i + 4);
+					//cout << regs["eax"]->i << endl;
 					//printf("addr %x\n", (int *)(stack + regs["esp"]->i + 4));
 					cout << "Print int: " << arg << endl;
 				}
 				else if (label->reg == "print") {
 					auto arg = *(int *)(stack + regs["esp"]->i + 4);
-					cout << "Print str: " << (char *)arg << endl;
+					string strs{ (char *)arg };
+					if (strs.substr(0,7) == "newline") {
+						cout <<"\n"<< endl;
+					}
+					else {
+						cout << strs << " ";
+						//cout << "Print str: " << strs << endl;
+					}
+				}
+				else if (label->reg == "ord") {
+					auto arg = *(int *)(stack + regs["esp"]->i + 4);
+					string strs{ (char *)arg };
+					cout << "ord "<<strs[0] << endl;
+					regs["eax"]->i = int(strs[0]);
+				}
+				else if (label->reg == "getchar") {
+					static char input[20] = "a1a7a8aabaa4a5a6";
+					static int index = 0;
+					string c{ input[index] };
+					//char *c = 
+					cout << "index " << index << " "<<c<< endl;
+					stringData[c] = c;
+					index++;
+					regs["eax"]->i = reinterpret_cast<int >(stringData[c].c_str());
+					cout << "regs[eax]->i" << regs["eax"]->i << endl;
 				}
 				else if (label->reg == "malloc") {
 					auto size = *(int *)(stack + regs["esp"]->i + 0);
 					if (size == 0) {
-						regs["eax"]->i = 0xcc;
+						regs["eax"]->i = 0xff;
 					}
 					else {
 						regs["eax"]->i = reinterpret_cast<int >(arr);
@@ -508,7 +590,17 @@ public:
 						arr += size;
 
 					}
-					break;
+				}
+				else if (label->reg == "stringEqual")
+				{
+					auto str1 = *(int *)(stack + regs["esp"]->i + 0);
+					auto str2 = *(int *)(stack + regs["esp"]->i + 4);
+					if (string((char*)str1) == string((char*)str2)) {
+						regs["eax"]->i = 1;
+					}
+					else {
+						regs["eax"]->i = 0;
+					}
 				}
 				else if (label->reg == "initArray") {
 					// extern call no stack link
@@ -543,6 +635,7 @@ public:
 					//cout << "init array" << regs["eax"]->i<<endl;
 				}
 				else {
+					assert(label->reg[0] == 'L');
 					regs["esp"]->i -= 4;
 					int a = regs["esp"]->i;
 					*(int *)(stack + regs["esp"]->i) = pc;

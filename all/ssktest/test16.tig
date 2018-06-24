@@ -1,0 +1,12 @@
+/* error: mutually recursive types thet do not pass through record or array */
+let 
+
+type a=c
+type b=a
+var i:=0
+type c=d
+type d=a
+
+in
+ ""
+end

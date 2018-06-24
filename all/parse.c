@@ -76,12 +76,18 @@ A_exp parse(string fname, string path)
 }
 int main() {
 	//parse("print.tig");
+
 	//parse("record.tig");
 	//parse("ssktest/while.tig");
 	//parse("while.test");
 	//parse("while.test");
 	
-	parse("ssktest/42.tig", String("ssktest/42.txt"));
+	parse(String("ssktest/king.tig"), String("ssktest/king.txt"));
+	//parse(String("ssktest/slice.tig"), String("ssktest/slice.txt"));
+	//parse(String("ssktest/iff.tig"), String("ssktest/iff.txt"));
+
+	//parse(String("ssktest/mul.tig"), String("ssktest/mul.txt"));
+	//parse("ssktest/king.tig", String("ssktest/king.txt"));
 	//parse("ssktest/test12.tig", String("ssktest/test12.txt"));
 	//parse("fac.tig");
 	//parse("string.tig");

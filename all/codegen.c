@@ -47,13 +47,14 @@ static Temp_temp munchExp(T_exp e) {
 				assert(0 && "Invalid operator");
 			}
 			//if (1)
-			Temp_temp r = F_RV();
+			//Temp_temp r = F_RV();
+			Temp_temp r = Temp_newtemp();
 				
 			if (e->u.BINOP.left->kind == T_CONST) {
 				T_exp e2 = e->u.BINOP.right;
 				int n = e->u.BINOP.left->u.CONST;
 				Temp_temp s0 = munchExp(e2);
-				sprintf(assem_string, "%s `d0,`s0%s%d\n", op, sign, n);
+				sprintf(assem_string, "%s `d0,%d%s`s0\n", op, n, sign);
 				emit(AS_Oper(String(assem_string), Temp_TempList(r, NULL), Temp_TempList(s0, NULL), NULL));
 				return r;
 			}
@@ -329,10 +330,10 @@ AS_instrList F_codegen(F_frame frame, T_stmList stmList, int main) {
 			rv = t;
 		}
 	}
-	if (rv != NULL && rv != F_RV()) {
+	/*if (rv != NULL && rv != F_RV()) {
 		sprintf(assem_string, "mov `d0, `s0\n");
 		emit(AS_Oper(String(assem_string), Temp_TempList(F_RV(), NULL), Temp_TempList(rv, NULL), NULL));
-	}
+	}*/
 	sprintf(assem_string, "ret\n");
 	emit(AS_Oper(String(assem_string),  NULL, NULL, NULL));
 	//add ret;

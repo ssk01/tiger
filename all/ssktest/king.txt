@@ -1,0 +1,391 @@
+string: 
+
+L25: newline
+L17: newline
+L6: .
+L5: O
+proc:     letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 24
+L47:
+mov	r119,8
+mov [ebp+-4], r119
+mov	r120,0
+mov [ebp+-8], r120
+add r121,ebp+-12
+mov r115, r121
+mov	r123,0
+push r123
+mov	r124,[ebp+-4]
+push r124
+call	initArray
+mov r114, eax
+mov [r115], r114
+add r131,ebp+-16
+mov r113, r131
+mov	r133,0
+push r133
+mov	r134,[ebp+-4]
+push r134
+call	initArray
+mov r112, eax
+mov [r113], r112
+add r135,ebp+-20
+mov r111, r135
+mov	r137,0
+push r137
+mov	r140,[ebp+-4]
+mov	r141,[ebp+-4]
+add r139,r140+r141
+sub r138,r139-1
+push r138
+call	initArray
+mov r110, eax
+mov [r111], r110
+add r142,ebp+-24
+mov r109, r142
+mov	r144,0
+push r144
+mov	r147,[ebp+-4]
+mov	r148,[ebp+-4]
+add r146,r147+r148
+sub r145,r146-1
+push r145
+call	initArray
+mov r108, eax
+mov [r109], r108
+mov	r150,0
+push r150
+push ebp
+call	L2
+mov	r152,[ebp+-8]
+push r152
+mov	r153,[ebp+8]
+push r153
+call	printInt
+jmp	L46
+L46:
+ret
+
+END L0
+
+proc:     try, L2
+
+BEGIN L2
+push ebp
+mov ebp, esp
+sub esp, 12
+L49:
+mov	r155,[ebp+12]
+mov	r157,[ebp+8]
+mov	r156,[r157+-4]
+cmp	r155, r156
+je L43
+L44:
+mov	r158,0
+mov [ebp+-4], r158
+mov	r161,[ebp+8]
+mov	r160,[r161+-4]
+sub r159,r160-1
+mov [ebp+-8], r159
+mov	r162,1
+mov [ebp+-12], r162
+mov	r163,[ebp+-4]
+mov	r164,[ebp+-8]
+cmp	r163, r164
+jle L41
+L42:
+mov	r165,0
+mov r107, r165
+L45:
+jmp	L48
+L43:
+mov	r168,[ebp+8]
+push r168
+call	L1
+mov r107, eax
+jmp	L45
+L41:
+L39:
+mov	r170,[ebp+-12]
+mov	r171,0
+cmp	r170, r171
+je L26
+L40:
+mov	r175,[ebp+8]
+mov	r174,[r175+-20]
+mov	r178,[ebp+-4]
+mov	r179,[ebp+12]
+add r177,r178+r179
+mul r176,r177*4
+add r173,r174+r176
+mov	r172,[r173]
+mov	r180,0
+cmp	r172, r180
+je L27
+L28:
+mov	r181,0
+mov r104, r181
+L29:
+mov	r182,0
+cmp	r104, r182
+jne L34
+L35:
+mov	r183,[ebp+-4]
+mov	r184,[ebp+-8]
+cmp	r183, r184
+jl L36
+L37:
+mov	r185,0
+mov [ebp+-12], r185
+L38:
+jmp	L39
+L27:
+mov	r187,1
+mov r105, r187
+mov	r191,[ebp+8]
+mov	r190,[r191+-24]
+mov	r196,[ebp+-4]
+mov	r198,[ebp+8]
+mov	r197,[r198+-4]
+add r195,r196+r197
+sub r194,r195-1
+mov	r199,[ebp+12]
+sub r193,r194-r199
+mul r192,r193*4
+add r189,r190+r192
+mov	r188,[r189]
+mov	r200,0
+cmp	r188, r200
+je L30
+L31:
+mov	r201,0
+mov r105, r201
+L30:
+mov r104, r105
+jmp	L29
+L34:
+mov	r206,[ebp+8]
+mov	r205,[r206+-12]
+mov	r208,[ebp+-4]
+mul r207,r208*4
+add r204,r205+r207
+mov	r203,[r204]
+mov	r209,0
+cmp	r203, r209
+je L32
+L33:
+jmp	L35
+L32:
+mov	r213,[ebp+8]
+mov	r212,[r213+-12]
+mov	r215,[ebp+-4]
+mul r214,r215*4
+add r211,r212+r214
+mov	r216,1
+mov [r211], r216
+mov	r219,[ebp+8]
+mov	r218,[r219+-20]
+mov	r222,[ebp+-4]
+mov	r223,[ebp+12]
+add r221,r222+r223
+mul r220,r221*4
+add r217,r218+r220
+mov	r224,1
+mov [r217], r224
+mov	r227,[ebp+8]
+mov	r226,[r227+-24]
+mov	r232,[ebp+-4]
+mov	r234,[ebp+8]
+mov	r233,[r234+-4]
+add r231,r232+r233
+sub r230,r231-1
+mov	r235,[ebp+12]
+sub r229,r230-r235
+mul r228,r229*4
+add r225,r226+r228
+mov	r236,1
+mov [r225], r236
+mov	r239,[ebp+8]
+mov	r238,[r239+-16]
+mov	r241,[ebp+12]
+mul r240,r241*4
+add r237,r238+r240
+mov r242, r237
+add r243,ebp+-4
+mov r244, [r243]
+mov [r242], r244
+mov	r247,[ebp+12]
+add r246,r247+1
+push r246
+mov	r248,[ebp+8]
+push r248
+call	L2
+mov	r251,[ebp+8]
+mov	r250,[r251+-12]
+mov	r253,[ebp+-4]
+mul r252,r253*4
+add r249,r250+r252
+mov	r254,0
+mov [r249], r254
+mov	r257,[ebp+8]
+mov	r256,[r257+-20]
+mov	r260,[ebp+-4]
+mov	r261,[ebp+12]
+add r259,r260+r261
+mul r258,r259*4
+add r255,r256+r258
+mov	r262,0
+mov [r255], r262
+mov	r265,[ebp+8]
+mov	r264,[r265+-24]
+mov	r270,[ebp+-4]
+mov	r272,[ebp+8]
+mov	r271,[r272+-4]
+add r269,r270+r271
+sub r268,r269-1
+mov	r273,[ebp+12]
+sub r267,r268-r273
+mul r266,r267*4
+add r263,r264+r266
+mov	r274,0
+mov [r263], r274
+jmp	L33
+L36:
+mov	r277,[ebp+-4]
+add r276,r277+1
+mov [ebp+-4], r276
+jmp	L38
+L26:
+jmp	L42
+L48:
+ret
+
+END L2
+
+proc:     printboard, L1
+
+BEGIN L1
+push ebp
+mov ebp, esp
+sub esp, 24
+L51:
+mov	r281,0
+mov [ebp+-4], r281
+mov	r284,[ebp+8]
+mov	r283,[r284+-4]
+sub r282,r283-1
+mov [ebp+-8], r282
+mov	r285,1
+mov [ebp+-12], r285
+mov	r286,[ebp+-4]
+mov	r287,[ebp+-8]
+cmp	r286, r287
+jle L23
+L24:
+push L25
+mov	r291,[ebp+8]
+mov	r290,[r291+8]
+push r290
+call	print
+mov	r292,[ebp+8]
+mov	r295,[ebp+8]
+mov	r294,[r295+-8]
+add r293,r294+1
+mov [r292+-8], r293
+jmp	L50
+L23:
+L21:
+mov	r297,[ebp+-12]
+mov	r298,0
+cmp	r297, r298
+je L3
+L22:
+mov	r299,0
+mov [ebp+-16], r299
+mov	r302,[ebp+8]
+mov	r301,[r302+-4]
+sub r300,r301-1
+mov [ebp+-20], r300
+mov	r303,1
+mov [ebp+-24], r303
+mov	r304,[ebp+-16]
+mov	r305,[ebp+-20]
+cmp	r304, r305
+jle L15
+L16:
+push L17
+mov	r309,[ebp+8]
+mov	r308,[r309+8]
+push r308
+call	print
+mov	r310,[ebp+-4]
+mov	r311,[ebp+-8]
+cmp	r310, r311
+jl L18
+L19:
+mov	r312,0
+mov [ebp+-12], r312
+L20:
+jmp	L21
+L15:
+L13:
+mov	r314,[ebp+-24]
+mov	r315,0
+cmp	r314, r315
+je L4
+L14:
+mov	r317,[ebp+8]
+mov	r316,[r317+8]
+mov r280, r316
+mov	r321,[ebp+8]
+mov	r320,[r321+-16]
+mov	r323,[ebp+-4]
+mul r322,r323*4
+add r319,r320+r322
+mov	r318,[r319]
+mov	r324,[ebp+-16]
+cmp	r318, r324
+je L7
+L8:
+mov r101, L6
+L9:
+push r101
+push r280
+call	print
+mov	r327,[ebp+-16]
+mov	r328,[ebp+-20]
+cmp	r327, r328
+jl L10
+L11:
+mov	r329,0
+mov [ebp+-24], r329
+L12:
+jmp	L13
+L7:
+mov r101, L5
+jmp	L9
+L10:
+mov	r334,[ebp+-16]
+add r333,r334+1
+mov [ebp+-16], r333
+jmp	L12
+L4:
+jmp	L16
+L18:
+mov	r338,[ebp+-4]
+add r337,r338+1
+mov [ebp+-4], r337
+jmp	L20
+L3:
+jmp	L24
+L50:
+ret
+
+END L1
+

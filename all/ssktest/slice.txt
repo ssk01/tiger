@@ -1,0 +1,562 @@
+string: 
+
+L46: wtf
+L45: wtf
+L38: fuck
+L25: _
+L24: newline
+L21: 0
+L19: any.any
+L15: a
+L9: 0
+L8: 9
+proc:     letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 16
+L48:
+add r135,ebp+-4
+mov r131, r135
+mov	r137,[ebp+8]
+push r137
+call	getchar
+mov r130, eax
+mov [r131], r130
+add r144,ebp+-8
+mov r129, r144
+mov	r146,4
+push r146
+call	malloc
+mov r101, eax
+mov	r147,0
+mov [r101+0], r147
+mov [r129], r101
+add r148,ebp+-12
+mov r128, r148
+push ebp
+call	L4
+mov r127, eax
+mov [r128], r127
+add r150,ebp+-16
+mov r126, r150
+add r151,ebp+-4
+mov r125, r151
+mov	r153,[ebp+8]
+push r153
+call	getchar
+mov r124, eax
+mov [r125], r124
+push ebp
+call	L4
+mov [r126], eax
+mov	r156,[ebp+-12]
+push r156
+push ebp
+call	L2
+push L45
+mov	r159,[ebp+8]
+push r159
+call	print
+mov	r161,[ebp+-16]
+push r161
+push ebp
+call	L2
+push L46
+mov	r164,[ebp+8]
+push r164
+call	print
+mov r123, ebp
+mov	r166,[ebp+-16]
+push r166
+mov	r167,[ebp+-12]
+push r167
+push ebp
+call	L3
+mov r122, eax
+push r122
+push r123
+call	L2
+jmp	L47
+L47:
+ret
+
+END L0
+
+proc:     nn, L5
+
+BEGIN L5
+push ebp
+mov ebp, esp
+sub esp, 4
+L50:
+add r172,ebp+-4
+mov r171, r172
+mov	r174,4
+push r174
+call	malloc
+mov r117, eax
+mov	r175,0
+mov [r117+0], r175
+mov [r171], r117
+mov	r178,[ebp+-4]
+mov	r180,4
+mul r179,0*r180
+add r177,r178+r179
+mov	r176,[r177]
+mov	r181,0
+cmp	r176, r181
+jne L42
+L43:
+mov	r183,0
+push r183
+call	malloc
+mov r120, eax
+mov r121, r120
+L44:
+jmp	L49
+L42:
+mov	r186,8
+push r186
+call	malloc
+mov r119, eax
+mov	r187,1
+mov [r119+0], r187
+add r188,r119+4
+mov r170, r188
+mov	r190,0
+push r190
+call	malloc
+mov r118, eax
+mov [r170], r118
+mov r121, r119
+jmp	L44
+L49:
+ret
+
+END L5
+
+proc:     readlist, L4
+
+BEGIN L4
+push ebp
+mov ebp, esp
+sub esp, 8
+L52:
+add r197,ebp+-4
+mov r196, r197
+mov	r199,4
+push r199
+call	malloc
+mov r113, eax
+mov	r200,0
+mov [r113+0], r200
+mov [r196], r113
+add r201,ebp+-8
+mov r195, r201
+mov	r203,[ebp+-4]
+push r203
+mov	r204,[ebp+8]
+push r204
+call	L1
+mov r194, eax
+mov [r195], r194
+mov	r207,[ebp+-4]
+mov	r209,4
+mul r208,0*r209
+add r206,r207+r208
+mov	r205,[r206]
+mov	r210,0
+cmp	r205, r210
+jne L39
+L40:
+push L38
+mov	r214,[ebp+8]
+mov	r213,[r214+8]
+push r213
+call	print
+mov	r216,0
+push r216
+call	malloc
+mov r115, eax
+mov r116, r115
+L41:
+jmp	L51
+L39:
+mov	r219,8
+push r219
+call	malloc
+mov r114, eax
+mov	r220,[ebp+-8]
+mov [r114+0], r220
+add r221,r114+4
+mov r193, r221
+mov	r223,[ebp+8]
+push r223
+call	L4
+mov r192, eax
+mov [r193], r192
+mov r116, r114
+jmp	L41
+L51:
+ret
+
+END L4
+
+proc:     merge, L3
+
+BEGIN L3
+push ebp
+mov ebp, esp
+L54:
+mov	r231,[ebp+12]
+mov r230, r231
+mov	r233,0
+push r233
+call	malloc
+mov r111, eax
+cmp	r230, r111
+je L35
+L36:
+mov	r234,[ebp+16]
+mov r229, r234
+mov	r236,0
+push r236
+call	malloc
+mov r109, eax
+cmp	r229, r109
+je L32
+L33:
+mov	r239,[ebp+12]
+mov	r241,4
+mul r240,0*r241
+add r238,r239+r240
+mov	r237,[r238]
+mov	r244,[ebp+16]
+mov	r246,4
+mul r245,0*r246
+add r243,r244+r245
+mov	r242,[r243]
+cmp	r237, r242
+jl L29
+L30:
+mov	r248,8
+push r248
+call	malloc
+mov r107, eax
+mov	r251,[ebp+16]
+mov	r253,4
+mul r252,0*r253
+add r250,r251+r252
+mov	r249,[r250]
+mov [r107+0], r249
+add r254,r107+4
+mov r226, r254
+mov	r258,[ebp+16]
+mov	r260,4
+mul r259,1*r260
+add r257,r258+r259
+mov	r256,[r257]
+push r256
+mov	r261,[ebp+12]
+push r261
+mov	r262,[ebp+8]
+push r262
+call	L3
+mov r225, eax
+mov [r226], r225
+mov r108, r107
+L31:
+mov r110, r108
+L34:
+mov r112, r110
+L37:
+jmp	L53
+L35:
+mov	r264,[ebp+16]
+mov r112, r264
+jmp	L37
+L32:
+mov	r266,[ebp+12]
+mov r110, r266
+jmp	L34
+L29:
+mov	r269,8
+push r269
+call	malloc
+mov r106, eax
+mov	r272,[ebp+12]
+mov	r274,4
+mul r273,0*r274
+add r271,r272+r273
+mov	r270,[r271]
+mov [r106+0], r270
+add r275,r106+4
+mov r228, r275
+mov	r277,[ebp+16]
+push r277
+mov	r280,[ebp+12]
+mov	r282,4
+mul r281,1*r282
+add r279,r280+r281
+mov	r278,[r279]
+push r278
+mov	r283,[ebp+8]
+push r283
+call	L3
+mov r227, eax
+mov [r228], r227
+mov r108, r106
+jmp	L31
+L53:
+ret
+
+END L3
+
+proc:     printlist, L2
+
+BEGIN L2
+push ebp
+mov ebp, esp
+L56:
+mov	r286,[ebp+12]
+mov r285, r286
+mov	r288,0
+push r288
+call	malloc
+mov r104, eax
+cmp	r285, r104
+je L26
+L27:
+mov	r292,[ebp+12]
+mov	r294,4
+mul r293,0*r294
+add r291,r292+r293
+mov	r290,[r291]
+push r290
+mov	r296,[ebp+8]
+mov	r295,[r296+8]
+push r295
+call	printInt
+push L25
+mov	r300,[ebp+8]
+mov	r299,[r300+8]
+push r299
+call	print
+mov	r304,[ebp+12]
+mov	r306,4
+mul r305,1*r306
+add r303,r304+r305
+mov	r302,[r303]
+push r302
+mov	r307,[ebp+8]
+push r307
+call	L2
+mov r105, eax
+L28:
+jmp	L55
+L26:
+push L24
+mov	r312,[ebp+8]
+mov	r311,[r312+8]
+push r311
+call	print
+mov r105, eax
+jmp	L28
+L55:
+ret
+
+END L2
+
+proc:     readint, L1
+
+BEGIN L1
+push ebp
+mov ebp, esp
+sub esp, 4
+L58:
+mov	r323,0
+mov [ebp+-4], r323
+push ebp
+call	L7
+mov	r326,[ebp+12]
+mov	r328,4
+mul r327,0*r328
+add r325,r326+r327
+mov r322, r325
+mov	r331,[ebp+8]
+mov	r330,[r331+-4]
+push r330
+push ebp
+call	L6
+mov r321, eax
+mov [r322], r321
+push L19
+mov	r335,[ebp+8]
+mov	r334,[r335+8]
+push r334
+call	print
+mov	r339,[ebp+12]
+mov	r341,4
+mul r340,0*r341
+add r338,r339+r340
+mov	r337,[r338]
+push r337
+mov	r343,[ebp+8]
+mov	r342,[r343+8]
+push r342
+call	printInt
+L22:
+mov	r346,[ebp+8]
+mov	r345,[r346+-4]
+push r345
+push ebp
+call	L6
+mov r320, eax
+mov	r347,0
+cmp	r320, r347
+je L20
+L23:
+add r348,ebp+-4
+mov r319, r348
+mov	r351,[ebp+8]
+mov	r350,[r351+-4]
+push r350
+mov	r353,[ebp+8]
+mov	r352,[r353+8]
+push r352
+call	ord
+mov r316, eax
+mov r318, r316
+push L21
+mov	r357,[ebp+8]
+mov	r356,[r357+8]
+push r356
+call	ord
+mov r317, eax
+sub r358,r318-r317
+mov [r319], r358
+mov	r360,[ebp+8]
+add r359,r360+-4
+mov r315, r359
+mov	r363,[ebp+8]
+mov	r362,[r363+8]
+push r362
+call	getchar
+mov r314, eax
+mov [r315], r314
+mov	r365,[ebp+-4]
+push r365
+mov	r367,[ebp+8]
+mov	r366,[r367+8]
+push r366
+call	printInt
+jmp	L22
+L20:
+mov	r369,[ebp+-4]
+jmp	L57
+L57:
+ret
+
+END L1
+
+proc:     skipto, L7
+
+BEGIN L7
+push ebp
+mov ebp, esp
+L17:
+push L15
+mov	r378,[ebp+8]
+mov	r377,[r378+8]
+mov	r376,[r377+-4]
+push r376
+call	stringEqual
+mov r373, eax
+mov	r379,0
+cmp	r373, r379
+je L16
+L18:
+mov	r382,[ebp+8]
+mov	r381,[r382+8]
+add r380,r381+-4
+mov r372, r380
+mov	r386,[ebp+8]
+mov	r385,[r386+8]
+mov	r384,[r385+8]
+push r384
+call	getchar
+mov r371, eax
+mov [r372], r371
+jmp	L17
+L16:
+jmp	L59
+L59:
+ret
+
+END L7
+
+proc:     isdigit, L6
+
+BEGIN L6
+push ebp
+mov ebp, esp
+L61:
+mov	r396,[ebp+12]
+push r396
+mov	r399,[ebp+8]
+mov	r398,[r399+8]
+mov	r397,[r398+8]
+push r397
+call	ord
+mov r392, eax
+mov r394, r392
+push L9
+mov	r404,[ebp+8]
+mov	r403,[r404+8]
+mov	r402,[r403+8]
+push r402
+call	ord
+mov r393, eax
+cmp	r394, r393
+jge L10
+L11:
+mov	r405,0
+mov r102, r405
+L12:
+jmp	L60
+L10:
+mov	r407,1
+mov r103, r407
+mov	r409,[ebp+12]
+push r409
+mov	r412,[ebp+8]
+mov	r411,[r412+8]
+mov	r410,[r411+8]
+push r410
+call	ord
+mov r389, eax
+mov r391, r389
+push L8
+mov	r417,[ebp+8]
+mov	r416,[r417+8]
+mov	r415,[r416+8]
+push r415
+call	ord
+mov r390, eax
+cmp	r391, r390
+jle L13
+L14:
+mov	r418,0
+mov r103, r418
+L13:
+mov r102, r103
+jmp	L12
+L60:
+ret
+
+END L6
+

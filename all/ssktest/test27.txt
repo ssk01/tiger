@@ -1,0 +1,62 @@
+     letExp(
+      decList(
+       varDec(a,
+        intExp(0),
+        TRUE),
+       decList(
+        functionDec(
+         fundecList(
+          fundec(g,
+           fieldList(
+            field(a,
+             int,
+             TRUE),
+            fieldList()),
+           int,
+           varExp(
+            simpleVar(a))),
+          fundecList())),
+        decList())),
+      seqExp(
+       expList(
+        callExp(g,
+         expList(
+          intExp(2),
+          expList())),
+        expList())))string: 
+
+proc:     letme, L0
+
+BEGIN L0
+push -1 #fake address for fuck static link
+push -1 #fake address for end
+push ebp
+mov ebp, esp
+sub esp, 4
+L3:
+mov	r104,0
+mov [ebp+-4], r104
+mov	r106,2
+push r106
+push ebp
+call	L1
+jmp	L2
+L2:
+ret
+
+END L0
+
+proc:     g, L1
+
+BEGIN L1
+push ebp
+mov ebp, esp
+L5:
+mov	r114,[ebp+12]
+jmp	L4
+L4:
+mov eax, r114
+ret
+
+END L1
+
