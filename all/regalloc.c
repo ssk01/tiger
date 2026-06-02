@@ -7,11 +7,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define NUM_REGS 8
-#define NUM_ALLOC (NUM_REGS - 2)
-#define SPILL_REG1 (NUM_ALLOC)
-#define SPILL_REG2 (NUM_ALLOC + 1)
-
 typedef struct {
 	int temp_num;
 	int start;
@@ -36,16 +31,9 @@ static int count_instructions(AS_instrList ilist) {
 static void collect_temps(AS_instr instr, Temp_tempList *defs, Temp_tempList *uses) {
 	*defs = *uses = NULL;
 	switch (instr->kind) {
-	case I_OPER:
-		*defs = instr->u.OPER.dst;
-		*uses = instr->u.OPER.src;
-		break;
-	case I_MOVE:
-		*defs = instr->u.MOVE.dst;
-		*uses = instr->u.MOVE.src;
-		break;
-	case I_LABEL:
-		break;
+	case I_OPER: *defs = instr->u.OPER.dst; *uses = instr->u.OPER.src; break;
+	case I_MOVE: *defs = instr->u.MOVE.dst; *uses = instr->u.MOVE.src; break;
+	case I_LABEL: break;
 	}
 }
 
@@ -54,10 +42,8 @@ static int max_temp_num(AS_instr *instrs, int n) {
 	for (int i = 0; i < n; i++) {
 		Temp_tempList defs, uses;
 		collect_temps(instrs[i], &defs, &uses);
-		for (Temp_tempList p = defs; p; p = p->tail)
-			if (p->head->num > m) m = p->head->num;
-		for (Temp_tempList p = uses; p; p = p->tail)
-			if (p->head->num > m) m = p->head->num;
+		for (Temp_tempList p = defs; p; p = p->tail) if (p->head->num > m) m = p->head->num;
+		for (Temp_tempList p = uses; p; p = p->tail) if (p->head->num > m) m = p->head->num;
 	}
 	return m;
 }
@@ -89,94 +75,56 @@ static AS_instr make_store(Temp_temp src, int offset) {
 static Temp_tempList list_copy(Temp_tempList l) {
 	if (!l) return NULL;
 	Temp_tempList result = NULL, *tail = &result;
-	for (; l; l = l->tail) {
-		*tail = Temp_TempList(l->head, NULL);
-		tail = &(*tail)->tail;
-	}
+	for (; l; l = l->tail) { *tail = Temp_TempList(l->head, NULL); tail = &(*tail)->tail; }
 	return result;
 }
 
-typedef struct {
-	Temp_temp sp1;
-	Temp_temp sp2;
-} SpillRegs;
+typedef struct { Temp_temp sp1, sp2; } SpillRegs;
 
 static AS_instr copy_instr_replace(AS_instr old, SpillRegs *sp,
-                                   LiveInterval *intervals, int max_num,
-                                   int *sp_src_count, int *sp_dst_count) {
+                                   LiveInterval *intervals, int max_num) {
 	Temp_tempList dst = NULL, src = NULL;
-
 	switch (old->kind) {
-	case I_OPER:
-		dst = list_copy(old->u.OPER.dst);
-		src = list_copy(old->u.OPER.src);
-		break;
-	case I_MOVE:
-		dst = list_copy(old->u.MOVE.dst);
-		src = list_copy(old->u.MOVE.src);
-		break;
-	case I_LABEL:
-		return AS_Label(old->u.LABEL.assem, old->u.LABEL.label);
+	case I_OPER: dst = list_copy(old->u.OPER.dst); src = list_copy(old->u.OPER.src); break;
+	case I_MOVE: dst = list_copy(old->u.MOVE.dst); src = list_copy(old->u.MOVE.src); break;
+	case I_LABEL: return AS_Label(old->u.LABEL.assem, old->u.LABEL.label);
 	}
-
-	int sc = 0, dc = 0;
-	for (Temp_tempList p = src; p; p = p->tail) {
-		int tn = p->head->num;
-		if (tn <= max_num && intervals[tn].spilled) sc++;
-	}
-	for (Temp_tempList p = dst; p; p = p->tail) {
-		int tn = p->head->num;
-		if (tn <= max_num && intervals[tn].spilled) dc++;
-	}
-	*sp_src_count = sc;
-	*sp_dst_count = dc;
 
 	int si = 0;
 	for (Temp_tempList p = src; p; p = p->tail) {
 		int tn = p->head->num;
-		if (tn <= max_num && intervals[tn].spilled) {
-			p->head = (si == 0) ? sp->sp1 : sp->sp2;
-			si++;
-		}
+		if (tn <= max_num && intervals[tn].spilled) p->head = (si++ == 0) ? sp->sp1 : sp->sp2;
 	}
 	int di = 0;
 	for (Temp_tempList p = dst; p; p = p->tail) {
 		int tn = p->head->num;
-		if (tn <= max_num && intervals[tn].spilled) {
-			p->head = (di == 0) ? sp->sp1 : sp->sp2;
-			di++;
-		}
+		if (tn <= max_num && intervals[tn].spilled) p->head = (di++ == 0) ? sp->sp1 : sp->sp2;
 	}
 
 	switch (old->kind) {
-	case I_OPER:
-		return AS_Oper(old->u.OPER.assem, dst, src, old->u.OPER.jumps);
-	case I_MOVE:
-		return AS_Move(old->u.MOVE.assem, dst, src);
-	default:
-		return NULL;
+	case I_OPER: return AS_Oper(old->u.OPER.assem, dst, src, old->u.OPER.jumps);
+	case I_MOVE: return AS_Move(old->u.MOVE.assem, dst, src);
+	default: return NULL;
 	}
 }
 
-AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
+AS_instrList RA_linearScan_config(F_frame frame, AS_instrList ilist, RA_Config *cfg) {
+	int NUM_REGS = cfg->num_regs;
+	int NUM_ALLOC = cfg->num_alloc;
+	int SPILL_REG1 = NUM_ALLOC;
+	int SPILL_REG2 = NUM_ALLOC + 1;
+
 	int n = count_instructions(ilist);
 	AS_instr *instrs = checked_malloc(n * sizeof(AS_instr));
-	{
-		int idx = 0;
-		for (AS_instrList p = ilist; p; p = p->tail) instrs[idx++] = p->head;
-	}
+	{ int idx = 0; for (AS_instrList p = ilist; p; p = p->tail) instrs[idx++] = p->head; }
 
 	int max_num = max_temp_num(instrs, n);
 	Temp_temp *temp_by_num = build_temp_by_num(max_num, instrs, n);
 
 	LiveInterval *intervals = checked_malloc((max_num + 1) * sizeof(LiveInterval));
 	for (int i = 0; i <= max_num; i++) {
-		intervals[i].temp_num = i;
-		intervals[i].start = 999999;
-		intervals[i].end = -1;
-		intervals[i].reg = -1;
-		intervals[i].spilled = 0;
-		intervals[i].spill_slot = 0;
+		intervals[i].temp_num = i; intervals[i].start = 999999; intervals[i].end = -1;
+		intervals[i].reg = -1; intervals[i].spilled = 0; intervals[i].spill_slot = 0;
 	}
 
 	for (int i = 0; i < n; i++) {
@@ -206,59 +154,39 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 	}
 	qsort(sorted, num_intervals, sizeof(LiveInterval *), cmp_by_start);
 
-	char *phy_reg_names[NUM_REGS];
-	int i;
-	for (i = 0; i < NUM_REGS; i++) {
-		char buf[8];
-		sprintf(buf, "R%d", i);
-		phy_reg_names[i] = String(buf);
-	}
-
 	int free_regs[NUM_ALLOC];
-	for (i = 0; i < NUM_ALLOC; i++) free_regs[i] = 1;
+	for (int i = 0; i < NUM_ALLOC; i++) free_regs[i] = 1;
 	LiveInterval *active[num_intervals + 1];
 	int active_len = 0;
 	int spill_slot_count = 0;
+	int word_sz = (int)sizeof(intptr_t);
 
 	for (int j = 0; j < num_intervals; j++) {
 		LiveInterval *cur = sorted[j];
-
 		int na = 0;
 		for (int k = 0; k < active_len; k++) {
-			if (active[k]->end >= cur->start)
-				active[na++] = active[k];
-			else
-				free_regs[active[k]->reg] = 1;
+			if (active[k]->end >= cur->start) active[na++] = active[k];
+			else free_regs[active[k]->reg] = 1;
 		}
 		active_len = na;
 
 		int free_idx = -1;
-		for (int r = 0; r < NUM_ALLOC; r++)
-			if (free_regs[r]) { free_idx = r; break; }
+		for (int r = 0; r < NUM_ALLOC; r++) if (free_regs[r]) { free_idx = r; break; }
 
 		if (free_idx >= 0) {
-			free_regs[free_idx] = 0;
-			cur->reg = free_idx;
-			cur->spilled = 0;
+			free_regs[free_idx] = 0; cur->reg = free_idx; cur->spilled = 0;
 		} else {
 			int victim = -1, max_end = cur->end;
-			for (int k = 0; k < active_len; k++) {
-				if (active[k]->end > max_end) {
-					max_end = active[k]->end;
-					victim = k;
-				}
-			}
+			for (int k = 0; k < active_len; k++)
+				if (active[k]->end > max_end) { max_end = active[k]->end; victim = k; }
 			if (victim >= 0) {
-				cur->reg = active[victim]->reg;
-				cur->spilled = 0;
-				active[victim]->spilled = 1;
-				spill_slot_count++;
-				active[victim]->spill_slot = -(spill_slot_count * (int)sizeof(intptr_t));
+				cur->reg = active[victim]->reg; cur->spilled = 0;
+				active[victim]->spilled = 1; spill_slot_count++;
+				active[victim]->spill_slot = -(spill_slot_count * word_sz);
 				active[victim] = cur;
 			} else {
-				cur->spilled = 1;
-				spill_slot_count++;
-				cur->spill_slot = -(spill_slot_count * (int)sizeof(intptr_t));
+				cur->spilled = 1; spill_slot_count++;
+				cur->spill_slot = -(spill_slot_count * word_sz);
 			}
 		}
 
@@ -266,29 +194,21 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 			int pos = 0;
 			while (pos < active_len && active[pos]->end < cur->end) pos++;
 			for (int k = active_len; k > pos; k--) active[k] = active[k - 1];
-			active[pos] = cur;
-			active_len++;
+			active[pos] = cur; active_len++;
 		}
 	}
 
-	int extra_frame = spill_slot_count * (int)sizeof(intptr_t);
+	int extra_frame = spill_slot_count * word_sz;
 
 	SpillRegs sp;
-	sp.sp1 = Temp_newtemp();
-	sp.sp2 = Temp_newtemp();
-	{
-		char buf[8];
-		sprintf(buf, "R%d", SPILL_REG1);
-		Temp_enter(Temp_name(), sp.sp1, String(buf));
-		sprintf(buf, "R%d", SPILL_REG2);
-		Temp_enter(Temp_name(), sp.sp2, String(buf));
-	}
+	sp.sp1 = Temp_newtemp(); sp.sp2 = Temp_newtemp();
+	Temp_enter(Temp_name(), sp.sp1, String(cfg->reg_names[SPILL_REG1]));
+	Temp_enter(Temp_name(), sp.sp2, String(cfg->reg_names[SPILL_REG2]));
 
 	for (int j = 0; j < num_intervals; j++) {
 		LiveInterval *cur = sorted[j];
 		if (!cur->spilled && temp_by_num[cur->temp_num])
-			Temp_enter(Temp_name(), temp_by_num[cur->temp_num],
-			           phy_reg_names[cur->reg]);
+			Temp_enter(Temp_name(), temp_by_num[cur->temp_num], String(cfg->reg_names[cur->reg]));
 	}
 
 	AS_instrList result = NULL, *tail = &result;
@@ -298,22 +218,17 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 		Temp_tempList defs, uses;
 		collect_temps(ins, &defs, &uses);
 
-		int sp_src = 0, sp_dst = 0;
-		AS_instr new_ins = copy_instr_replace(ins, &sp, intervals, max_num, &sp_src, &sp_dst);
-
 		int si = 0;
 		for (Temp_tempList p = uses; p; p = p->tail) {
 			int tn = p->head->num;
 			if (tn <= max_num && intervals[tn].spilled) {
 				int slot = intervals[tn].spill_slot - extra_frame;
-				Temp_temp ld_reg = (si == 0) ? sp.sp1 : sp.sp2;
-				*tail = AS_InstrList(make_load(ld_reg, slot), NULL);
-				tail = &(*tail)->tail;
-				si++;
+				Temp_temp ld = (si == 0) ? sp.sp1 : sp.sp2;
+				*tail = AS_InstrList(make_load(ld, slot), NULL); tail = &(*tail)->tail; si++;
 			}
 		}
 
-		*tail = AS_InstrList(new_ins, NULL);
+		*tail = AS_InstrList(copy_instr_replace(ins, &sp, intervals, max_num), NULL);
 		tail = &(*tail)->tail;
 
 		int di = 0;
@@ -321,10 +236,8 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 			int tn = p->head->num;
 			if (tn <= max_num && intervals[tn].spilled) {
 				int slot = intervals[tn].spill_slot - extra_frame;
-				Temp_temp st_reg = (di == 0) ? sp.sp1 : sp.sp2;
-				*tail = AS_InstrList(make_store(st_reg, slot), NULL);
-				tail = &(*tail)->tail;
-				di++;
+				Temp_temp st = (di == 0) ? sp.sp1 : sp.sp2;
+				*tail = AS_InstrList(make_store(st, slot), NULL); tail = &(*tail)->tail; di++;
 			}
 		}
 	}
@@ -332,8 +245,7 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 	for (AS_instrList p = result; p; p = p->tail) {
 		AS_instr ins = p->head;
 		if (ins->kind == I_OPER && strstr(ins->u.OPER.assem, "sub `d0")) {
-			char buf[200];
-			int orig = 0;
+			char buf[200]; int orig = 0;
 			sscanf(ins->u.OPER.assem, "sub `d0, %d", &orig);
 			sprintf(buf, "sub `d0, %d\n", orig + extra_frame);
 			ins->u.OPER.assem = String(buf);
@@ -344,9 +256,12 @@ AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
 	printf("[RA] virtual regs: %d, spills: %d, extra frame: %d bytes\n",
 	       num_intervals, spill_slot_count, extra_frame);
 
-	free(temp_by_num);
-	free(sorted);
-	free(intervals);
-	free(instrs);
+	free(temp_by_num); free(sorted); free(intervals); free(instrs);
 	return result;
+}
+
+AS_instrList RA_linearScan(F_frame frame, AS_instrList ilist) {
+	static char *default_names[] = {"R0","R1","R2","R3","R4","R5","R6","R7"};
+	RA_Config cfg = {8, 6, default_names};
+	return RA_linearScan_config(frame, ilist, &cfg);
 }
