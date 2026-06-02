@@ -358,7 +358,7 @@ AS_instrList F_codegen_arm64(F_frame frame, T_stmList stmList, int main_flag) {
 	if (main_flag == 0) {
 		sprintf(buf, "mov x0, #0\n");
 		emit(AS_Oper(String(buf), Temp_TempList(F_RV(), NULL), NULL, NULL));
-		sprintf(buf, "bl _exit\n");
+		sprintf(buf, "bl _Tiger_exit\n");
 		emit(AS_Oper(String(buf), NULL, NULL, NULL));
 	} else {
 		sprintf(buf, "mov sp, x29\n");

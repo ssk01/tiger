@@ -244,7 +244,9 @@ AS_instrList RA_linearScan_config(F_frame frame, AS_instrList ilist, RA_Config *
 
 	for (AS_instrList p = result; p; p = p->tail) {
 		AS_instr ins = p->head;
-		if (ins->kind == I_OPER && strstr(ins->u.OPER.assem, "sub `d0")) {
+		if (ins->kind == I_OPER && strstr(ins->u.OPER.assem, "sub `d0") &&
+		    strstr(ins->u.OPER.assem, "sub `d0, ") &&
+		    !strstr(ins->u.OPER.assem, "`s")) {
 			char buf[200]; int orig = 0;
 			sscanf(ins->u.OPER.assem, "sub `d0, %d", &orig);
 			sprintf(buf, "sub `d0, %d\n", orig + extra_frame);

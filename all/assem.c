@@ -87,7 +87,6 @@ static void format(char *result, string assem,
 {
 	char *p;
 	int i = 0; /* offset to result string */
-	//printf("assem:%s\n", assem);
 	for (p = assem; p && *p != '\0'; p++)
 		if (*p == '`')
 			switch (*(++p)) {

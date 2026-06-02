@@ -5,6 +5,8 @@
 void L0(void);
 int main(void) { L0(); return 0; }
 
+void Tiger_exit(long code) { fflush(stdout); exit((int)code); }
+
 void printInt(long n) { printf("%ld\n", n); }
 void print(char *s) {
 	if (strcmp(s, "newline") == 0) printf("\n");
