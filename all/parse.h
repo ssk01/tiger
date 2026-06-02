@@ -2,5 +2,5 @@
 #pragma once
 #include "absyn.h"
 #include "util.h"
-A_exp parse(string fname);
+A_exp parse(string fname, string path);
 

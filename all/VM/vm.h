@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <set>
+#include <cstdint>
 using std::cout;
 using std::endl;
 using std::string;
@@ -20,12 +21,12 @@ public:
 		reg,
 		imm,
 	};
-	int i;
+	intptr_t i;
 	Type t;
 	string reg;
 	Num(string reg) :t(Type::reg), i(-1), reg(reg) {
 	}
-	Num(int i) :t(Type::imm), i(i) {
+	Num(intptr_t i) :t(Type::imm), i(i) {
 	}
 	~Num() {
 		//cout << "doNum" << endl;
@@ -38,7 +39,7 @@ struct regEnv;
 using regEnvPtr = regEnv*;
 struct regEnv {
 	regEnvPtr parent;
-	map<string, int> oldVal;
+	map<string, intptr_t> oldVal;
 	~regEnv() {
 		//cout << "regEnv deconstructor" << endl;
 	}
@@ -117,12 +118,12 @@ public:
 class Vm {
 private:
 	vector<Ins> text;
-	int i;
+	intptr_t i;
 	char *stack;
-	int pc;
+	intptr_t pc;
 	map<string, Num*> regs;
 	regEnvPtr env;
-	map<string, int> labelPos;
+	map<string, intptr_t> labelPos;
 	map<string, string> stringData;
 	Num *lastNum;
 	char *arr;
@@ -235,7 +236,7 @@ public:
 			if (regs.find(s1) == regs.end()) {
 				regs[s1] = new Num(s1);
 				if (s1[0] == 'L') {
-					regs[s1]->i = reinterpret_cast<int>(stringData[s1].c_str());
+					regs[s1]->i = reinterpret_cast<intptr_t>(stringData[s1].c_str());
 				}
 			}
 			ins.operNum.push_back(regs[s1]);
@@ -279,7 +280,7 @@ public:
 		if (regs.find(s2) == regs.end()) {
 			if (s2[0] == 'L') {
 				regs[s2] = new Num(s2);
-				regs[s2]->i = reinterpret_cast<int>(stringData[s2].c_str());
+				regs[s2]->i = reinterpret_cast<intptr_t>(stringData[s2].c_str());
 			}
 			else {
 				regs[s2] = new Num(s2);
@@ -299,7 +300,7 @@ public:
 		if (regs.find(s3) == regs.end()) {
 			if (s3[0] == 'L') {
 				regs[s3] = new Num(s3);
-				regs[s3]->i = reinterpret_cast<int>(stringData[s3].c_str());
+				regs[s3]->i = reinterpret_cast<intptr_t>(stringData[s3].c_str());
 			}
 			else {
 				regs[s3] = new Num(s3);
@@ -400,11 +401,11 @@ public:
 				auto reg1 = ins.operNum[0];
 				auto reg2 = ins.operNum[1];
 				auto reg3 = ins.operNum[2];
-				if (reg1->i + reg2->i >= (int)beg) {
-					*(reinterpret_cast<int *>(reg1->i + reg2->i)) = reg3->i;
+				if (reg1->i + reg2->i >= (intptr_t)beg) {
+					*(reinterpret_cast<intptr_t *>(reg1->i + reg2->i)) = reg3->i;
 				}
 				else {
-					*(reinterpret_cast<int *>(stack + reg1->i + reg2->i)) = reg3->i;
+					*(reinterpret_cast<intptr_t *>(stack + reg1->i + reg2->i)) = reg3->i;
 				}
 				break;
 			}
@@ -413,11 +414,11 @@ public:
 				auto reg2 = ins.operNum[1];
 				auto reg3 = ins.operNum[2];
 
-				if (reg2->i + reg3->i >= (int)beg) {
-					reg1->i = *(reinterpret_cast<int *>(reg2->i + reg3->i));
+				if (reg2->i + reg3->i >= (intptr_t)beg) {
+					reg1->i = *(reinterpret_cast<intptr_t *>(reg2->i + reg3->i));
 				}
 				else {
-					reg1->i = *(reinterpret_cast<int *>(stack + reg2->i + reg3->i));
+					reg1->i = *(reinterpret_cast<intptr_t *>(stack + reg2->i + reg3->i));
 
 				}
 				lastNum = reg1;
@@ -440,8 +441,8 @@ public:
 				break;
 			}
 			case Ins::Type::PUSH: {
-				regs["esp"]->i -= 4;
-				*(int *)(stack + regs["esp"]->i) = ins.operNum[0]->i;
+				regs["esp"]->i -= sizeof(intptr_t);
+				*(intptr_t *)(stack + regs["esp"]->i) = ins.operNum[0]->i;
 				break;
 
 			}
@@ -511,7 +512,7 @@ public:
 			}
 			case Ins::Type::RET: {
 				/*	cout << "ret value" << regs["eax"]->i << endl;*/
-				pc = *(reinterpret_cast<int *>(stack + regs["ebp"]->i + 4));
+				pc = *(reinterpret_cast<intptr_t *>(stack + regs["ebp"]->i + sizeof(intptr_t)));
 				if (lastNum != nullptr) {
 					regs["eax"]->i = lastNum->i;
 					lastNum = nullptr;
@@ -525,7 +526,7 @@ public:
 					return;
 				}
 				regs["esp"]->i = regs["ebp"]->i;
-				regs["ebp"]->i = *(reinterpret_cast<int *>(stack + regs["ebp"]->i));
+				regs["ebp"]->i = *(reinterpret_cast<intptr_t *>(stack + regs["ebp"]->i));
 				set<string> special{ "esp","ebp","eax" };
 				for (auto reg : env->oldVal) {
 					if (special.find(reg.first) == special.end()) {
@@ -546,14 +547,14 @@ public:
 			case Ins::Type::CALL: {
 				auto label = ins.operNum[0];
 				if (label->reg == "printInt") {
-					auto arg = *(int *)(stack + regs["esp"]->i + 4);
+					auto arg = *(intptr_t *)(stack + regs["esp"]->i + sizeof(intptr_t));
 					//cout << regs["eax"]->i << endl;
-					//printf("addr %x\n", (int *)(stack + regs["esp"]->i + 4));
+					//printf("addr %x\n", (int *)(stack + regs["esp"]->i + sizeof(intptr_t)));
 					cout << "Print int: " << arg << endl;
 				}
 				else if (label->reg == "print") {
-					auto arg = *(int *)(stack + regs["esp"]->i + 4);
-					string strs{ (char *)arg };
+					auto arg = *(intptr_t *)(stack + regs["esp"]->i + sizeof(intptr_t));
+					string strs{ (char *)(intptr_t)arg };
 					if (strs.substr(0,7) == "newline") {
 						cout <<"\n"<< endl;
 					}
@@ -563,8 +564,8 @@ public:
 					}
 				}
 				else if (label->reg == "ord") {
-					auto arg = *(int *)(stack + regs["esp"]->i + 4);
-					string strs{ (char *)arg };
+					auto arg = *(intptr_t *)(stack + regs["esp"]->i + sizeof(intptr_t));
+					string strs{ (char *)(intptr_t)arg };
 					cout << "ord "<<strs[0] << endl;
 					regs["eax"]->i = int(strs[0]);
 				}
@@ -576,16 +577,16 @@ public:
 					cout << "index " << index << " "<<c<< endl;
 					stringData[c] = c;
 					index++;
-					regs["eax"]->i = reinterpret_cast<int >(stringData[c].c_str());
+					regs["eax"]->i = reinterpret_cast<intptr_t>(stringData[c].c_str());
 					cout << "regs[eax]->i" << regs["eax"]->i << endl;
 				}
 				else if (label->reg == "malloc") {
-					auto size = *(int *)(stack + regs["esp"]->i + 0);
+					auto size = *(intptr_t *)(stack + regs["esp"]->i + 0);
 					if (size == 0) {
 						regs["eax"]->i = 0xff;
 					}
 					else {
-						regs["eax"]->i = reinterpret_cast<int >(arr);
+						regs["eax"]->i = reinterpret_cast<intptr_t>(arr);
 						cout << "malloc addr :" << regs["eax"]->i << endl;
 						arr += size;
 
@@ -593,9 +594,9 @@ public:
 				}
 				else if (label->reg == "stringEqual")
 				{
-					auto str1 = *(int *)(stack + regs["esp"]->i + 0);
-					auto str2 = *(int *)(stack + regs["esp"]->i + 4);
-					if (string((char*)str1) == string((char*)str2)) {
+					auto str1 = *(intptr_t *)(stack + regs["esp"]->i + 0);
+					auto str2 = *(intptr_t *)(stack + regs["esp"]->i + sizeof(intptr_t));
+					if (string((char*)(intptr_t)str1) == string((char*)(intptr_t)str2)) {
 						regs["eax"]->i = 1;
 					}
 					else {
@@ -604,18 +605,18 @@ public:
 				}
 				else if (label->reg == "initArray") {
 					// extern call no stack link
-					auto num = *(int *)(stack + regs["esp"]->i + 0);
-					auto init = *(int *)(stack + regs["esp"]->i + 4);
+					auto num = *(intptr_t *)(stack + regs["esp"]->i + 0);
+					auto init = *(intptr_t *)(stack + regs["esp"]->i + sizeof(intptr_t));
 					cout << "int" << init << endl;
 					cout << "int" << num << endl;
 					/*	arr[3] = 4;
 					arr[4] = 4;
 					arr[2] = 4;*/
 					for (auto i = 0; i < num; i++) {
-						*((int*)arr + i) = init;
+						*((intptr_t*)arr + i) = init;
 					}
-					regs["eax"]->i = reinterpret_cast<int >(arr);
-					arr = arr + 4 * num;
+					regs["eax"]->i = reinterpret_cast<intptr_t>(arr);
+					arr = arr + sizeof(intptr_t) * num;
 					break;
 
 					//auto val = new int[num];
@@ -629,16 +630,16 @@ public:
 					//	val[i] = init;
 					//}
 					////cout << val[5] << endl;
-					//int add = reinterpret_cast<int>( val);
+					//int add = reinterpret_cast<intptr_t>( val);
 					////printf("aaa %x\n", add);
 					//regs["eax"]->i = add;
 					//cout << "init array" << regs["eax"]->i<<endl;
 				}
 				else {
 					assert(label->reg[0] == 'L');
-					regs["esp"]->i -= 4;
+					regs["esp"]->i -= sizeof(intptr_t);
 					int a = regs["esp"]->i;
-					*(int *)(stack + regs["esp"]->i) = pc;
+					*(intptr_t *)(stack + regs["esp"]->i) = pc;
 					pc = labelPos[label->reg];
 					auto oldEnv = new regEnv();
 					oldEnv->parent = env;

@@ -8,7 +8,7 @@ int main() {
 	/*parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/test2.txt");*/
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/iff.txt");
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/slice.txt");
-	parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/king.txt");
+	parse(vm, "../ssktest/king.txt");
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/mul.txt");
 	//parse(vm, "c:/Users/ssk/Source/Repos/tigerRose/chap4/chap4/ssktest/test12.txt");
 	vm.Run();

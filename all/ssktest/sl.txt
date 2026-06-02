@@ -7,10 +7,10 @@ push -1 #fake address for fuck static link
 push -1 #fake address for end
 push ebp
 mov ebp, esp
-sub esp, 4
+sub esp, 8
 L3:
 mov	r104,11
-mov [ebp+-4], r104
+mov [ebp+-8], r104
 push ebp
 call	L1
 jmp	L2
@@ -25,11 +25,11 @@ BEGIN L1
 push ebp
 mov ebp, esp
 L5:
-mov	r115,[ebp+8]
-mov	r114,[r115+-4]
+mov	r115,[ebp+16]
+mov	r114,[r115+-8]
 push r114
-mov	r117,[ebp+8]
-mov	r116,[r117+8]
+mov	r117,[ebp+16]
+mov	r116,[r117+16]
 push r116
 call	printInt
 jmp	L4

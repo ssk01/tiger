@@ -6,6 +6,7 @@
 #include "printtree.h"
 #include "canon.h"
 #include <stdio.h>
+#include <stdlib.h>
 expty expTy(Tr_exp exp, Ty_ty ty) {
 	expty e;
 	e.exp = exp;
@@ -179,7 +180,7 @@ Ty_ty actual_ty(S_table tenv, Ty_ty ty) {
 			Ty_print(t);
 			if (t->u.name.sym == ty->u.name.sym) {
 				fck("type recursive");
-				//exit(0£©
+				//exit(0ï¿½ï¿½
 				return Ty_Nil();
 			}
 		}

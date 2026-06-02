@@ -1,6 +1,6 @@
 #include "frame.h"
 
-const int FRAME_WORD_SIZE = 4;
+const int FRAME_WORD_SIZE = 8;
 static const int F_MAX_REG = 6;
 
 struct F_frame_ {
