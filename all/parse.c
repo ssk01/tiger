@@ -12,6 +12,7 @@
 #include "semant.h"
 #include "assem.h"
 #include "codegen.h"
+#include "regalloc.h"
 #include "lowbVM.h"
 #include "printtree.h"
 extern int yyparse(void);
@@ -31,6 +32,7 @@ static void doProc(FILE *out, F_frame frame, T_stm body, int i)
 	printf("___________________________________\n");
 	//printStmList(stdout, stmList);
 	iList = F_codegen(frame, stmList, i); /* 9 */
+	iList = RA_linearScan(frame, iList);
 	printf("___________________________________\n");
 	//out = fopen("fac_1.txt", "a+");
 	//out = stdout;

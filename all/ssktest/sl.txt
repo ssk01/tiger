@@ -9,8 +9,8 @@ push ebp
 mov ebp, esp
 sub esp, 8
 L3:
-mov	r104,11
-mov [ebp+-8], r104
+mov	R0,11
+mov [ebp+-8], R0
 push ebp
 call	L1
 jmp	L2
@@ -25,12 +25,15 @@ BEGIN L1
 push ebp
 mov ebp, esp
 L5:
-mov	r115,[ebp+16]
-mov	r114,[r115+-8]
-push r114
-mov	r117,[ebp+16]
-mov	r116,[r117+16]
-push r116
+mov	R0,[ebp+16]
+mov	R1,[R0+-8]
+push R1
+mov	R0,[ebp+16]
+mov	R2,[R0+16]
+mov [ebp+-16], R2
+mov R2, [ebp+-16]
+push R2
+mov R2, [ebp+-16]
 call	printInt
 jmp	L4
 L4:
