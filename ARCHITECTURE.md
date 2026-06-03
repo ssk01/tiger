@@ -148,7 +148,7 @@ RA_linearScan(frame, ilist) → AS_instrList (重写后的指令列表)
 2. 过滤: 特殊寄存器 (ebp/esp/eax/void) 和标签 (L开头) 不参与分配
 3. 线性扫描: 8个物理寄存器 (6可分配 + 2 spill), 分配或 spill
 4. 改写指令:
-   - 非 spill 的虚拟寄存器 → 物理寄存器名 (R0-R5 或 x9-x14)
+   - 非 spill 的虚拟寄存器 → 物理寄存器名 (R0-R5 或 x19-x24)
    - spill 的: 插入 load/store 指令, 用 spill 寄存器中转
 5. 更新 Temp_name() 映射: 虚拟寄存器 → 物理寄存器名字符串
 6. 扩展栈帧: 更新 `sub sp` 指令, 为 spill slot 腾出空间
@@ -164,9 +164,17 @@ typedef struct {
 ```
 
 VM 模式: `{"R0","R1","R2","R3","R4","R5","R6","R7"}`, num_alloc=6
-ARM64 模式: `{"x9","x10","x11","x12","x13","x14","x25","x26"}`, num_alloc=6
 
-## 已知问题
+ARM64 模式: `{"x19","x20","x21","x22","x23","x24","x25","x26"}`, num_alloc=6
+
+### ARM64 寄存器选择说明
+
+ARM64 模式使用 **callee-saved 寄存器 (x19-x24)** 作为分配寄存器, 而非 VM 模式的 caller-saved 寄存器 (x9-x14).
+原因: 编译器生成的代码会调用 C 函数 (如 `malloc`, `printInt`, `stringEqual`). AAPCS64 调用约定规定 caller-saved 寄存器 (x0-x18) 在函数调用后可能被破坏. 使用 callee-saved 寄存器可以确保程序变量在 bl 指令前后保持其值, 无需额外的 save/restore.
+
+x25-x26 作为 spill scratch 寄存器 (不被 callee-saved 保证, 但 spill 的 load/store 不跨越函数调用).
+
+### 已知问题
 - 多条 spilled 操作数在同一指令中时, 共享 spill 寄存器导致值覆盖 (需第二 spill 寄存器或重组指令)
 - 当前 8-queens 程序在 6 个分配寄存器下产生 0 spill, 所以 spill 机制未充分测试
 
@@ -185,7 +193,7 @@ ARM64 模式: `{"x9","x10","x11","x12","x13","x14","x25","x26"}`, num_alloc=6
 
 | VM 指令 | ARM64 指令 | 说明 |
 |---------|-----------|------|
-| push src | str src, [sp, #-8]! | 入栈 (改为 sub sp + str 避免对齐问题) |
+| push src | sub sp, sp, #8; str src, [sp] | 入栈 (拆为两步, 避免 str writeback 破坏对齐) |
 | mov dst, src | mov dst, src | 寄存器复制 |
 | mov dst, #N | mov dst, #N | 加载立即数 |
 | mov dst, [src+N] | ldr dst, [src, #N] | 从内存加载 |
@@ -196,6 +204,9 @@ ARM64 模式: `{"x9","x10","x11","x12","x13","x14","x25","x26"}`, num_alloc=6
 | jmp label | b label | 无条件跳转 |
 | call label | bl label | 函数调用 |
 | ret | ret | 返回 |
+
+栈帧保存/恢复: 不使用 `stp/ldp` 写回模式 (如 `stp x29, x30, [sp, #-16]!`), 而是统一使用 `sub sp, sp, #N` 预分配, 再用普通 `str` 逐条存储.
+原因: `stp` 的 offset 必须 8 字节对齐, 当局部变量不是 16 字节整数倍时会产生对齐问题. 拆分为 `sub sp` + `str` 可以精确控制偏移量.
 
 #### 2. 栈帧
 
@@ -227,4 +238,48 @@ ARM64 中需要加载标签地址: `adrp xD, _label@PAGE; add xD, xD, _label@PAG
 
 - `add.tig` (1*3+2*4): 通过, 退出码 0
 - `sl.tig` (printInt(11)): 通过, 正确输出 11
-- `king.tig` (8皇后): 有已知问题 ("sub xN, 0" 指令)
+- `king.tig` (8皇后): 通过, 全部正确运行
+- 基准数据 (king.tig, 8-queens): VM 解释执行约 0.93s. ARM64 原生执行约 1.2s (待实际测量确认).
+
+### 实现过程中发现的 Bug 及修复
+
+#### Bug 1: RA 帧调整破坏了 sub 指令
+
+**症状**: 寄存器分配阶段扩展 `sub sp, sp, #N` 为帧预留 spill slot 时, 匹配模式 `sub \`d0` 过于宽泛, 也匹配了 `sub xD, xA, xB` 形式的算术减法指令, 错误地将其改写为 `sub x11, 0`.
+
+**修复**: 限制模式匹配只匹配 `sub sp, sp, #N` 的形式, 不匹配 `sub xA, xB, xC` 的三操作数减法.
+
+#### Bug 2: T_MOVE MEM 存储的双重偏移
+
+**症状**: `munchExp(MEM)` 在计算内存地址时已经包含了 offset (生成 `[base, #offset]`), 然后 T_MOVE 的 emit 又叠加了一次 offset, 导致实际存储地址为 `base + 2*offset`, 写入错误的内存位置.
+
+**修复**: T_MOVE MEM 存储时不再额外加 offset, 直接使用 munchExp 已计算好的地址.
+
+#### Bug 3: munchArgs 参数顺序反转
+
+**症状**: `munchArgs` 递归处理实参列表时, 先处理 tail 再处理 head (递归尾优先), 结果压栈顺序与 IR 期望顺序相反. IR 期望第一个实参在栈顶 (最先被 push), 但递归实现将最后一个实参先压栈.
+
+**修复**: 使用计数器确定栈偏移量, 将每个实参写入正确的位置, 而不是依赖递归调用的自然顺序.
+
+#### Bug 4: C 函数调用破坏寄存器
+
+**症状**: 程序在调用 `bl _printInt` 等 C 函数后, 之前计算的值被破坏. AAPCS64 规定 x0-x18 为 caller-saved 寄存器, `bl` 调用后的 C 代码可以随意修改它们. 最初使用 x9-x14 作为分配寄存器, 这些寄存器在 `bl` 后内容不可靠.
+
+**修复**: 将分配寄存器从 caller-saved (x9-x14) 切换为 callee-saved (x19-x24). callee-saved 寄存器由被调用者保证恢复原值, 跨函数调用安全.
+
+#### Bug 5: ExternCall 丢失 static link
+
+**症状**: 外部 C 函数 (如 `initArray`, `malloc`, `stringEqual`) 没有 static link 概念, Tiger 调用约定要求在实参之前 push static link. 但 codegen 在调用外部函数时跳过了第一个参数 (static link), 导致实参偏移量整体错位.
+
+**修复**: 外部函数调用时, 从 formal 实参列表的第二个元素开始 (跳过 static link), 只传递真正的函数参数给 C 函数.
+
+#### Bug 6: 帧指针指向位置错误
+
+**症状**: `fp` 指向帧底部 (栈高地址方向) 而非 saved-registers 区域, 导致局部变量的 `[fp-N]` 偏移计算出错, 变量读取/写入错误的栈位置.
+
+**修复**: 调整序言中 `fp` 的设置, 使其指向保存的 `x29/x30` 区域顶部 (即 `[fp+0]` = 保存的 fp, `[fp+8]` = 返回地址), 与帧布局约定一致.
+
+### 已知问题
+- ~~for 循环语法运行在每个 Tiger 程序时报告 `Bad file descriptor`~~ (已修复)
+- ~~`king.tig` (8皇后) 输出错误~~ (已修复, 即 Bug 1-Bug 6 综合修复后全部通过)
+- 多条 spilled 操作数在同一指令中时, 共享 spill 寄存器导致值覆盖
