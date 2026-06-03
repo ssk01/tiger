@@ -99,5 +99,5 @@ static void parse_arm64(string fname, string asm_path, string bin_path, int use_
 }
 
 int main() {
-	parse_arm64(String("ssktest/for1.tig"), String("ssktest/for1_arm64.s"), String("ssktest/a.out"), 1);
+	parse_arm64(String("ssktest/king.tig"), String("ssktest/king_arm64.s"), String("ssktest/a.out"), 1);
 }

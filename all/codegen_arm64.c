@@ -291,25 +291,30 @@ static Temp_temp munchStm(T_stm stm) {
 					Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
 			}
 			return d0;
- 		} else if (dst->kind == T_MEM) {
- 			Temp_temp s1 = munchExp(src);
- 			Temp_temp s0 = munchExp(dst->u.MEM);
-			int n;
+		} else if (dst->kind == T_MEM) {
+			Temp_temp s1 = munchExp(src);
+			int n = 0, has_off = 0;
+			Temp_temp s0 = NULL;
 			if (dst->u.MEM->kind == T_BINOP &&
 			    dst->u.MEM->u.BINOP.op == T_plus &&
 			    dst->u.MEM->u.BINOP.right->kind == T_CONST) {
+				s0 = munchExp(dst->u.MEM->u.BINOP.left);
 				n = dst->u.MEM->u.BINOP.right->u.CONST;
+				has_off = 1;
 			} else if (dst->u.MEM->kind == T_BINOP &&
 			           dst->u.MEM->u.BINOP.op == T_plus &&
 			           dst->u.MEM->u.BINOP.left->kind == T_CONST) {
+				s0 = munchExp(dst->u.MEM->u.BINOP.right);
 				n = dst->u.MEM->u.BINOP.left->u.CONST;
+				has_off = 1;
+			} else {
+				s0 = munchExp(dst->u.MEM);
+			}
+			if (has_off) {
+				sprintf(buf, "str `s1, [`s0, #%d]\n", n);
 			} else {
 				sprintf(buf, "str `s1, [`s0]\n");
-				emit(AS_Move(String(buf), NULL,
-					Temp_TempList(s0, Temp_TempList(s1, NULL))));
-				break;
 			}
-			sprintf(buf, "str `s1, [`s0, #%d]\n", n);
 			emit(AS_Move(String(buf), NULL,
 				Temp_TempList(s0, Temp_TempList(s1, NULL))));
 		} else assert(0);
