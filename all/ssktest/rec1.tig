@@ -1,0 +1,6 @@
+let
+    function try(c:int) = 
+      if c=0 then printInt(1)
+      else try(c-1)
+in try(3)
+end

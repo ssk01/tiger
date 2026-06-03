@@ -1,0 +1,13 @@
+let
+    var N := 1
+    type intArray = array of int
+    var row :=  [ N ] of 0:intArray
+    var col :=  [ N ] of 0:intArray
+    var diag1 :=  [N+N-1] of 0:intArray
+    var diag2 :=  [N+N-1] of 0:intArray
+    function try(c:int) = 
+      if c=N then printInt(99)
+      else for r := 0 to N-1
+        do try(c+1)
+in try(0)
+end

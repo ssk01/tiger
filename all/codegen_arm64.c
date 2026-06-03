@@ -44,11 +44,12 @@ static int count_args(T_expList elist) {
 	return n;
 }
 
+static int marg_counter;
+
 static Temp_tempList munchArgs(T_expList elist) {
 	assert(codegenFrame != NULL);
 	char buf[200];
 	if (!elist) return NULL;
-	Temp_tempList tlist = munchArgs(elist->tail);
 	Temp_temp e = munchExp(elist->head);
 	char *name = Temp_look(Temp_name(), e);
 	if (name && name[0] == 'L') {
@@ -59,9 +60,10 @@ static Temp_tempList munchArgs(T_expList elist) {
 		emit(AS_Oper(String(buf), Temp_TempList(addr, NULL), Temp_TempList(addr, NULL), NULL));
 		e = addr;
 	}
-	int tail_count = count_args(elist->tail);
-	sprintf(buf, "str `s0, [sp, #%d]\n", tail_count * 8);
+	int pos = marg_counter++;
+	sprintf(buf, "str `s0, [sp, #%d]\n", pos * 8);
 	emit(AS_Move(String(buf), NULL, Temp_TempList(e, NULL)));
+	Temp_tempList tlist = munchArgs(elist->tail);
 	return Temp_TempList(e, tlist);
 }
 
@@ -71,8 +73,7 @@ static void emit_extern_bridge(int nargs) {
 	for (int i = 0; i < nargs && i < 8; i++) {
 		Temp_temp areg = Temp_newtemp();
 		Temp_enter(Temp_name(), areg, String(arg_regs[i]));
-		int offset = (nargs - 1 - i) * 8;
-		sprintf(buf, "ldr `d0, [sp, #%d]\n", offset);
+		sprintf(buf, "ldr `d0, [sp, #%d]\n", i * 8);
 		emit(AS_Move(String(buf), Temp_TempList(areg, NULL), NULL));
 	}
 }
@@ -199,6 +200,7 @@ static Temp_temp munchExp(T_exp e) {
 			sprintf(buf, "sub sp, sp, #%d\n", arg_bytes);
 			emit(AS_Oper(String(buf), Temp_TempList(F_SP(), NULL), NULL, NULL));
 		}
+		marg_counter = 0;
 		Temp_tempList list = munchArgs(args);
 		if (is_ext) emit_extern_bridge(nargs);
 		if (fname && !is_ext && fname[0] != '_') {
@@ -285,27 +287,23 @@ static Temp_temp munchStm(T_stm stm) {
 				emit(AS_Move(String(buf), Temp_TempList(d0, NULL), Temp_TempList(addr, NULL)));
 			} else {
 				sprintf(buf, "mov `d0, `s0\n");
-				emit(AS_Move(String(buf), Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
+				emit(AS_Move(String(buf),
+					Temp_TempList(d0, NULL), Temp_TempList(s0, NULL)));
 			}
 			return d0;
-		} else if (dst->kind == T_MEM) {
-			Temp_temp s0, s1;
+ 		} else if (dst->kind == T_MEM) {
+ 			Temp_temp s1 = munchExp(src);
+ 			Temp_temp s0 = munchExp(dst->u.MEM);
 			int n;
 			if (dst->u.MEM->kind == T_BINOP &&
 			    dst->u.MEM->u.BINOP.op == T_plus &&
 			    dst->u.MEM->u.BINOP.right->kind == T_CONST) {
-				s0 = munchExp(dst->u.MEM->u.BINOP.left);
-				s1 = munchExp(src);
 				n = dst->u.MEM->u.BINOP.right->u.CONST;
 			} else if (dst->u.MEM->kind == T_BINOP &&
 			           dst->u.MEM->u.BINOP.op == T_plus &&
 			           dst->u.MEM->u.BINOP.left->kind == T_CONST) {
-				s0 = munchExp(dst->u.MEM->u.BINOP.right);
-				s1 = munchExp(src);
 				n = dst->u.MEM->u.BINOP.left->u.CONST;
 			} else {
-				s0 = munchExp(dst->u.MEM);
-				s1 = munchExp(src);
 				sprintf(buf, "str `s1, [`s0]\n");
 				emit(AS_Move(String(buf), NULL,
 					Temp_TempList(s0, Temp_TempList(s1, NULL))));
@@ -340,23 +338,25 @@ AS_instrList F_codegen_arm64(F_frame frame, T_stmList stmList, int main_flag) {
 	sprintf(buf, "_%s:\n", S_name(F_name(frame)));
 	emit(AS_Label(String(buf), F_name(frame)));
 
-	int stk_size = stack_size(frame);
 	int npushes = (main_flag == 0) ? 3 : 2;
-	int total = npushes * 8 + stk_size;
-	total = (total + 15) & ~15;
+	int push_bytes = npushes * 8;
+	push_bytes = (push_bytes + 15) & ~15;
+	int stk_size = stack_size(frame);
+	stk_size = (stk_size + 15) & ~15;
 
-	sprintf(buf, "sub sp, sp, #%d\n", total);
+	sprintf(buf, "sub sp, sp, #%d\n", push_bytes + stk_size);
 	emit(AS_Oper(String(buf), Temp_TempList(F_SP(), NULL), NULL, NULL));
 	if (main_flag == 0) {
-		sprintf(buf, "str xzr, [sp, #16]\n");
+		sprintf(buf, "str xzr, [sp, #%d]\n", stk_size + 16);
 		emit(AS_Move(String(buf), NULL, NULL));
 	}
-	sprintf(buf, "str x30, [sp, #8]\n");
+	sprintf(buf, "str x30, [sp, #%d]\n", stk_size + 8);
 	emit(AS_Move(String(buf), NULL, NULL));
-	sprintf(buf, "str x29, [sp]\n");
+	sprintf(buf, "str x29, [sp, #%d]\n", stk_size);
 	emit(AS_Move(String(buf), NULL, NULL));
-	sprintf(buf, "mov x29, sp\n");
+	sprintf(buf, "add x29, sp, #%d\n", stk_size);
 	emit(AS_Oper(String(buf), Temp_TempList(F_FP(), NULL), Temp_TempList(F_SP(), NULL), NULL));
+
 
 	Temp_temp rv = F_RV();
 	for (; sList; sList = sList->tail) {

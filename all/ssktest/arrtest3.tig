@@ -1,0 +1,7 @@
+let
+    type intArray = array of int
+    var arr := [1] of 42:intArray
+in
+    printInt(55);
+    printInt(66)
+end

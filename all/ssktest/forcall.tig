@@ -1,0 +1,4 @@
+let
+    function f(x:int) = printInt(x)
+in f(77)
+end

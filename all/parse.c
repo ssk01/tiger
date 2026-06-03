@@ -46,7 +46,7 @@ static void doProc_arm64(FILE *out, F_frame frame, T_stm body, int i, int use_ra
 	iList = F_codegen_arm64(frame, stmList, i);
 	printf("___________________________________\n");
 	if (use_ra) {
-		char *arm64_names[] = {"x9","x10","x11","x12","x13","x14","x25","x26"};
+		char *arm64_names[] = {"x19","x20","x21","x22","x23","x24","x25","x26"};
 		RA_Config cfg = {8, 6, arm64_names};
 		iList = RA_linearScan_config(frame, iList, &cfg);
 		printf("___________________________________\n");
@@ -99,5 +99,5 @@ static void parse_arm64(string fname, string asm_path, string bin_path, int use_
 }
 
 int main() {
-	parse_arm64(String("ssktest/sl.tig"), String("ssktest/sl_arm64.s"), String("ssktest/a.out"), 1);
+	parse_arm64(String("ssktest/for1.tig"), String("ssktest/for1_arm64.s"), String("ssktest/a.out"), 1);
 }
