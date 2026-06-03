@@ -24,6 +24,15 @@ static int is_extern_call(const char *name) {
 	return 0;
 }
 
+static int has_static_link(const char *name) {
+	if (!name) return 0;
+	if (name[0] == '_') name++;
+	static const char *no_sl[] = {"initArray", "malloc", "stringEqual", NULL};
+	for (int i = 0; no_sl[i]; i++)
+		if (strcmp(name, no_sl[i]) == 0) return 0;
+	return 1;
+}
+
 static void emit(AS_instr instr) {
 	if (!instrList) instrList = last = AS_InstrList(instr, NULL);
 	else last = last->tail = AS_InstrList(instr, NULL);
@@ -179,7 +188,7 @@ static Temp_temp munchExp(T_exp e) {
 		char *fname = Temp_look(Temp_name(), r);
 		T_expList args = e->u.CALL.args;
 		int is_ext = is_extern_call(fname);
-		if (is_ext && args) args = args->tail;
+		if (is_ext && has_static_link(fname) && args) args = args->tail;
 		int nargs = count_args(args);
 		int arg_bytes = nargs * 8;
 		int pad = 0;
